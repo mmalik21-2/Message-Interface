@@ -1,13 +1,10 @@
-import { writeFile } from "fs/promises";
-import path from "path";
-import { v4 as uuidv4 } from "uuid";
+import { put } from "@vercel/blob";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
 import Message from "@/models/Message";
 
-// Disable default body parser for streaming FormData
 export const config = {
   api: { bodyParser: false },
 };
@@ -24,6 +21,7 @@ export async function POST(req: NextRequest) {
 
   const formData = await req.formData();
   const file = formData.get("file");
+
   const conversationId = formData.get("conversationId") as string;
 
   if (!(file instanceof Blob) || !conversationId) {
@@ -33,19 +31,12 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const buffer = Buffer.from(await file.arrayBuffer());
+  const blob = await put(`messages/${file.name}`, file, {
+    access: "public",
+  });
 
-  const ext = file.type.split("/")[1] || "dat";
-  const filename = `${uuidv4()}.${ext}`;
-  const uploadDir = path.join(process.cwd(), "public", "uploads");
+  const fileUrl = blob.url;
 
-  // Ensure the uploads directory exists
-  await writeFile(path.join(uploadDir, ".keep"), ""); // optional: ensure folder tracked
-
-  const filePath = path.join(uploadDir, filename);
-  await writeFile(filePath, buffer);
-
-  const fileUrl = `/uploads/${filename}`;
   const messageContent: {
     imageUrl?: string;
     videoUrl?: string;
