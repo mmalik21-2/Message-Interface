@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "ES2017",
+    "target": "es2020", // Update from ES2017 to es2020 for better Next.js compatibility
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
@@ -8,7 +8,7 @@
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
-    "moduleResolution": "bundler",
+    "moduleResolution": "node", // Change from "bundler" to "node" for Next.js App Router
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
@@ -20,7 +20,8 @@
     ],
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "types": ["node", "next"] // Add explicit types for Node.js and Next.js
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]
