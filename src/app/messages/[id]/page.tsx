@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState, useRef } from "react";
@@ -24,19 +25,19 @@ interface Message {
 }
 
 export default function ChatPage() {
-  const { id } = useParams(); // conversationId
+  const { id } = useParams();
   const { data: session } = useSession();
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch messages
   useEffect(() => {
     if (!id) return;
 
     const fetchMessages = async () => {
       try {
         const res = await fetch(`/api/messages/${id}`);
+        if (!res.ok) throw new Error("Failed to fetch messages");
         const data = await res.json();
         setMessages(data);
       } catch (err) {
@@ -50,23 +51,33 @@ export default function ChatPage() {
   }, [id]);
 
   const sendMessage = async () => {
-    if (!text.trim()) return;
+    if (!text.trim() || !id) return;
 
-    await fetch("/api/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ conversationId: id, text }),
-    });
-
-    setText("");
-    const res = await fetch(`/api/messages/${id}`);
-    const data = await res.json();
-    setMessages(data);
+    try {
+      const res = await fetch("/api/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conversationId: id, text }),
+      });
+      if (!res.ok) throw new Error("Failed to send message");
+      setText("");
+      const updatedMessages = await fetch(`/api/messages/${id}`).then((res) =>
+        res.json()
+      );
+      setMessages(updatedMessages);
+    } catch (err) {
+      console.error("Send message error:", err);
+    }
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !id) return;
+
+    if (file.size > 500 * 1024 * 1024) {
+      alert("File too large (max 500MB)");
+      return;
+    }
 
     const formData = new FormData();
     formData.append("file", file);
@@ -78,22 +89,25 @@ export default function ChatPage() {
         body: formData,
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const errorText = await res.text();
-        console.error("Upload failed:", errorText);
+        console.error("Upload failed:", data.error, data.details);
+        alert(
+          `Upload failed: ${data.details || data.error || "Unknown error"}`
+        );
         return;
       }
 
-      const data = await res.json();
       setMessages((prev) => [...prev, data]);
-    } catch (error) {
-      console.error("Upload error:", error);
+    } catch (error: any) {
+      console.error("Upload error:", error.message);
+      alert(`Upload error: ${error.message || "Unknown error"}`);
     }
   };
 
   return (
     <div className="max-w-3xl mx-auto flex flex-col h-screen p-4">
-      {/* Messages */}
       <Card className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg) => {
           const isSender = msg.senderId._id === session?.user?.id;
@@ -162,7 +176,6 @@ export default function ChatPage() {
         })}
       </Card>
 
-      {/* Input + Actions */}
       <div className="mt-4 flex items-center gap-2">
         <Input
           className="flex-1"
