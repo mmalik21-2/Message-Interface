@@ -7,12 +7,14 @@ import { authOptions } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
 import Message from "@/models/Message";
 
+// Disable default body parser for streaming FormData
 export const config = {
   api: { bodyParser: false },
 };
 
 export async function POST(req: NextRequest) {
   await connectToDatabase();
+
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
 
@@ -21,21 +23,26 @@ export async function POST(req: NextRequest) {
   }
 
   const formData = await req.formData();
-  const file = formData.get("file") as File;
+  const file = formData.get("file");
   const conversationId = formData.get("conversationId") as string;
 
-  if (!file || !conversationId) {
+  if (!(file instanceof Blob) || !conversationId) {
     return NextResponse.json(
-      { error: "Missing file or conversationId" },
+      { error: "Missing or invalid file or conversationId" },
       { status: 400 }
     );
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  const ext = file.name?.split(".").pop() || "dat";
-  const filename = `${uuidv4()}.${ext}`;
-  const filePath = path.join(process.cwd(), "public/uploads", filename);
 
+  const ext = file.type.split("/")[1] || "dat";
+  const filename = `${uuidv4()}.${ext}`;
+  const uploadDir = path.join(process.cwd(), "public", "uploads");
+
+  // Ensure the uploads directory exists
+  await writeFile(path.join(uploadDir, ".keep"), ""); // optional: ensure folder tracked
+
+  const filePath = path.join(uploadDir, filename);
   await writeFile(filePath, buffer);
 
   const fileUrl = `/uploads/${filename}`;
