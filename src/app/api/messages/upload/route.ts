@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
   await writeFile(filePath, buffer);
 
   const fileUrl = `/uploads/${filename}`;
-  let messageContent: {
+  const messageContent: {
     imageUrl?: string;
     videoUrl?: string;
     fileUrl?: string;

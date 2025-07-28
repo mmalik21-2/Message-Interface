@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -16,7 +17,6 @@ import {
 import * as z from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signIn } from "next-auth/react";
 
 const formSchema = z
   .object({
@@ -83,7 +83,8 @@ export default function RegisterPage() {
         </CardHeader>
         <CardContent className="space-y-6">
           <p className="text-gray-600 text-sm">
-            Let's get you all set up so you can access your personal account.
+            Let&apos;s get you all set up so you can access your personal
+            account.
           </p>
           {error && <p className="text-red-500 text-sm">{error}</p>}
           <Form {...form}>

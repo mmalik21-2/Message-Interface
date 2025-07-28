@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { useSession } from "next-auth/react";
 import clsx from "clsx";
 import { Paperclip, SendHorizonal } from "lucide-react";
+import Image from "next/image";
 
 interface Message {
   _id: string;
@@ -116,7 +117,9 @@ export default function ChatPage() {
                 </span>
 
                 {msg.imageUrl && (
-                  <img
+                  <Image
+                    width={500}
+                    height={200}
                     src={msg.imageUrl}
                     alt="Uploaded"
                     className="rounded-lg max-w-[200px] border"

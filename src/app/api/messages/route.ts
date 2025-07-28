@@ -1,3 +1,5 @@
+// --- /app/api/messages/route.ts ---
+
 import { connectToDatabase } from "@/lib/db";
 import Message from "@/models/Message";
 import { getServerSession } from "next-auth";
@@ -10,11 +12,16 @@ export async function POST(req: Request) {
 
   if (!session?.user) return new Response("Unauthorized", { status: 401 });
 
-  const message = await Message.create({
+  const newMessage = await Message.create({
     conversationId,
     senderId: session.user.id,
     text,
   });
 
-  return Response.json(message);
+  const populatedMessage = await Message.findById(newMessage._id).populate(
+    "senderId",
+    "firstName lastName"
+  );
+
+  return Response.json(populatedMessage);
 }
