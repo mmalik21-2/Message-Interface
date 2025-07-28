@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { any } from "zod";
 
 const MONGODB_URI = process.env.MONGODB_URI!;
 
@@ -9,7 +10,7 @@ if (!MONGODB_URI) {
 let cached = global.mongoose;
 
 if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
+  cached = global.mongoose = { Types: any, conn: null, promise: null };
 }
 
 export async function connectToDatabase() {
