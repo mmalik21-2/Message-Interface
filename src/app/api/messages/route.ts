@@ -1,15 +1,9 @@
-import { writeFile } from "fs/promises";
-import path from "path";
-import { v4 as uuidv4 } from "uuid";
-import { NextRequest, NextResponse } from "next/server";
+import { put } from "@vercel/blob";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
 import Message from "@/models/Message";
-
-export const config = {
-  api: { bodyParser: false },
-};
+import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   await connectToDatabase();
@@ -31,35 +25,24 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Create uploads folder if needed (optional)
-  const uploadsDir = path.join(process.cwd(), "public/uploads");
+  const blob = await put(`messages/${file.name}`, file, {
+    access: "public",
+  });
 
-  // Save file locally (DEV ONLY)
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const ext = file.name?.split(".").pop() || "dat";
-  const filename = `${uuidv4()}.${ext}`;
-  const filePath = path.join(uploadsDir, filename);
-
-  try {
-    await writeFile(filePath, buffer);
-  } catch (error) {
-    console.error("Failed to save file", error);
-    return NextResponse.json({ error: "File save failed" }, { status: 500 });
-  }
-
-  const fileUrl = `/uploads/${filename}`;
+  const isVideo = file.type.startsWith("video/");
+  const isImage = file.type.startsWith("image/");
   const messageContent: {
-    imageUrl?: string;
     videoUrl?: string;
+    imageUrl?: string;
     fileUrl?: string;
   } = {};
 
-  if (file.type.startsWith("image/")) {
-    messageContent.imageUrl = fileUrl;
-  } else if (file.type.startsWith("video/")) {
-    messageContent.videoUrl = fileUrl;
+  if (isVideo) {
+    messageContent.videoUrl = blob.url;
+  } else if (isImage) {
+    messageContent.imageUrl = blob.url;
   } else {
-    messageContent.fileUrl = fileUrl;
+    messageContent.fileUrl = blob.url;
   }
 
   const message = await Message.create({
