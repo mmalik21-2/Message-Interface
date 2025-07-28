@@ -30,7 +30,6 @@ export default function ChatPage() {
   const [text, setText] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch messages
   useEffect(() => {
     if (!id) return;
 
@@ -93,7 +92,6 @@ export default function ChatPage() {
 
   return (
     <div className="max-w-3xl mx-auto flex flex-col h-screen p-4">
-      {/* Messages */}
       <Card className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg) => {
           const isSender = msg.senderId._id === session?.user?.id;
@@ -128,7 +126,7 @@ export default function ChatPage() {
 
                 {msg.videoUrl && (
                   <video controls className="rounded-lg max-w-[200px] border">
-                    <source src={msg.videoUrl} type="video/mp4" />
+                    <source src={msg.videoUrl} />
                     Your browser does not support the video tag.
                   </video>
                 )}
@@ -162,7 +160,6 @@ export default function ChatPage() {
         })}
       </Card>
 
-      {/* Input + Actions */}
       <div className="mt-4 flex items-center gap-2">
         <Input
           className="flex-1"
