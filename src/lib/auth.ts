@@ -12,29 +12,39 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error("Missing email or password");
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            console.error("Missing email or password");
+            return null;
+          }
+
+          await connectToDatabase();
+
+          const user = await User.findOne({ email: credentials.email }).select(
+            "email password firstName lastName _id"
+          );
+
+          if (!user) {
+            console.error("No user found with this email");
+            return null;
+          }
+
+          // NOTE: Replace this with hashed password check in production (e.g., bcrypt)
+          if (credentials.password !== user.password) {
+            console.error("Invalid password");
+            return null;
+          }
+
+          return {
+            id: user._id.toString(),
+            email: user.email,
+            firstName: user.firstName || null,
+            lastName: user.lastName || null,
+          };
+        } catch (err) {
+          console.error("Authorization error:", err);
+          return null;
         }
-
-        await connectToDatabase();
-        const user = await User.findOne({ email: credentials.email }).select(
-          "email password firstName lastName _id"
-        );
-
-        if (!user) {
-          throw new Error("No user found with this email");
-        }
-
-        if (credentials.password !== user.password) {
-          throw new Error("Invalid password");
-        }
-
-        return {
-          id: user._id.toString(),
-          email: user.email,
-          firstName: user.firstName || null,
-          lastName: user.lastName || null,
-        };
       },
     }),
   ],
@@ -63,12 +73,12 @@ export const authOptions: NextAuthOptions = {
 
   pages: {
     signIn: "/login",
-    error: "/login",
+    error: "/login", // receives error query param (?error=...)
   },
 
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60,
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
 
   secret: process.env.NEXTAUTH_SECRET,
