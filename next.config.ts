@@ -1,9 +1,16 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   images: {
-    domains: ["hxrq088o2wjxdf6q.public.blob.vercel-storage.com"],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "hxrq088o2wjxdf6q.public.blob.vercel-storage.com",
+        // Optionally specify port and pathname:
+        // port: "",
+        // pathname: "/**",
+      },
+    ],
   },
 };
 
