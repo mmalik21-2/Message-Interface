@@ -38,14 +38,14 @@ export default function SideBar() {
   };
 
   return (
-    <aside className="w-64 h-screen bg-gray-100 p-4 border-r overflow-y-auto">
+    <aside className="w-64 h-screen  p-4 border-r overflow-y-auto">
       <h2 className="text-xl font-semibold mb-4">Start a Chat</h2>
       <ul className="space-y-2">
         {users.map((user) => (
           <li
             key={user._id}
             onClick={() => startConversation(user._id)}
-            className="cursor-pointer hover:bg-blue-100 p-2 rounded"
+            className="cursor-pointer hover:bg-gradient-to-r from-cyan-400 to-green-300  p-2 rounded"
           >
             {user.firstName || "Unknown"} {user.lastName || ""}
           </li>
