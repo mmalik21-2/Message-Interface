@@ -7,6 +7,7 @@ export interface IUser extends Document {
   firstName: string;
   lastName: string;
   phoneNumber: string;
+  lastSeenAt?: Date; // <- NEW
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -18,6 +19,7 @@ const UserSchema = new Schema<IUser>(
     firstName: { type: String, required: false },
     lastName: { type: String, required: false },
     phoneNumber: { type: String, required: false },
+    lastSeenAt: { type: Date, default: Date.now }, // <- NEW
   },
   { timestamps: true }
 );

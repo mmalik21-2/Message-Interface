@@ -35,6 +35,7 @@ const formSchema = z
 export default function RegisterPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false); // 🔸 Add loading state
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -49,6 +50,9 @@ export default function RegisterPage() {
   });
 
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
+    setLoading(true);
+    setError(null);
+
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
@@ -63,15 +67,16 @@ export default function RegisterPage() {
           password: values.password,
         }),
       });
+
       const data = await res.json();
 
-      if (!res.ok) {
-        throw new Error(data.error || "Registration failed");
-      }
+      if (!res.ok) throw new Error(data.error || "Registration failed");
 
       router.push("/login");
     } catch (error: any) {
       setError(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -105,6 +110,7 @@ export default function RegisterPage() {
                         <Input
                           className="h-10 text-sm mt-1"
                           placeholder="First Name"
+                          disabled={loading}
                           {...field}
                         />
                       </FormControl>
@@ -124,6 +130,7 @@ export default function RegisterPage() {
                         <Input
                           className="h-10 text-sm mt-1"
                           placeholder="Last Name"
+                          disabled={loading}
                           {...field}
                         />
                       </FormControl>
@@ -146,6 +153,7 @@ export default function RegisterPage() {
                           className="h-10 text-sm mt-1"
                           placeholder="Email"
                           type="email"
+                          disabled={loading}
                           {...field}
                         />
                       </FormControl>
@@ -166,6 +174,7 @@ export default function RegisterPage() {
                           className="h-10 text-sm mt-1"
                           placeholder="Phone Number"
                           type="tel"
+                          disabled={loading}
                           {...field}
                         />
                       </FormControl>
@@ -187,6 +196,7 @@ export default function RegisterPage() {
                         className="h-10 text-sm mt-1"
                         placeholder="Password"
                         type="password"
+                        disabled={loading}
                         {...field}
                       />
                     </FormControl>
@@ -207,6 +217,7 @@ export default function RegisterPage() {
                         className="h-10 text-sm mt-1"
                         placeholder="Confirm Password"
                         type="password"
+                        disabled={loading}
                         {...field}
                       />
                     </FormControl>
@@ -218,6 +229,7 @@ export default function RegisterPage() {
                 <input
                   type="checkbox"
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  disabled={loading}
                 />
                 <label className="text-sm text-gray-600">
                   I agree to all the Terms and Privacy Policies
@@ -226,8 +238,9 @@ export default function RegisterPage() {
               <Button
                 type="submit"
                 className="w-full bg-black text-white h-10 text-sm"
+                disabled={loading}
               >
-                Create account
+                {loading ? "Creating account..." : "Create account"}
               </Button>
               <div className="text-center text-sm text-gray-600">
                 Already have an account?{" "}

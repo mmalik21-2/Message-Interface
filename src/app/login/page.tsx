@@ -11,10 +11,13 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setLoading(true);
+    setError(null);
 
     const result = await signIn("credentials", {
       email,
@@ -22,10 +25,12 @@ export default function LoginPage() {
       redirect: false,
     });
 
+    setLoading(false);
+
     if (result?.error) {
       setError(result.error);
     } else {
-      router.push("/homePage"); // Redirect to messages home
+      router.push("/homePage");
     }
   };
 
@@ -50,6 +55,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email"
+                disabled={loading}
               />
             </div>
             <div>
@@ -63,6 +69,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
+                disabled={loading}
               />
             </div>
             <div className="flex items-center justify-between text-sm">
@@ -70,6 +77,7 @@ export default function LoginPage() {
                 <input
                   type="checkbox"
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  disabled={loading}
                 />
                 <span>Remember me</span>
               </div>
@@ -83,8 +91,9 @@ export default function LoginPage() {
             <Button
               type="submit"
               className="w-full bg-black text-white h-10 text-sm"
+              disabled={loading}
             >
-              Login
+              {loading ? "Logging in..." : "Login"}
             </Button>
             <div className="text-center text-sm text-gray-600">
               Don’t have an account?{" "}

@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document, Types } from "mongoose";
+import mongoose, { Schema, Document, Types, model, models } from "mongoose";
 
 export interface IMessage extends Document {
   conversationId: Types.ObjectId;
@@ -7,6 +7,8 @@ export interface IMessage extends Document {
   imageUrl?: string;
   videoUrl?: string;
   fileUrl?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const MessageSchema = new Schema<IMessage>(
@@ -16,7 +18,11 @@ const MessageSchema = new Schema<IMessage>(
       ref: "Conversation",
       required: true,
     },
-    senderId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    senderId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
     text: { type: String },
     imageUrl: { type: String },
     videoUrl: { type: String },
@@ -25,5 +31,6 @@ const MessageSchema = new Schema<IMessage>(
   { timestamps: true }
 );
 
-export default mongoose.models.Message ||
-  mongoose.model("Message", MessageSchema);
+// ✅ Proper typing for model export
+const Message = models.Message || model<IMessage>("Message", MessageSchema);
+export default Message;

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useSession } from "next-auth/react";
 import clsx from "clsx";
-import { Paperclip, SendHorizonal } from "lucide-react";
+import { Paperclip, SendHorizonal, Loader2 } from "lucide-react";
 import Image from "next/image";
 
 interface Message {
@@ -29,6 +29,8 @@ export default function ChatPage() {
   const { data: session } = useSession();
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -53,6 +55,7 @@ export default function ChatPage() {
   const sendMessage = async () => {
     if (!text.trim() || !id) return;
 
+    setLoading(true);
     try {
       const res = await fetch("/api/messages", {
         method: "POST",
@@ -67,6 +70,8 @@ export default function ChatPage() {
       setMessages(updatedMessages);
     } catch (err) {
       console.error("Send message error:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -83,6 +88,7 @@ export default function ChatPage() {
     formData.append("file", file);
     formData.append("conversationId", id.toString());
 
+    setUploading(true);
     try {
       const res = await fetch("/api/messages/upload", {
         method: "POST",
@@ -103,6 +109,8 @@ export default function ChatPage() {
     } catch (error: any) {
       console.error("Upload error:", error.message);
       alert(`Upload error: ${error.message || "Unknown error"}`);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -182,10 +190,21 @@ export default function ChatPage() {
           placeholder="Type your message..."
           value={text}
           onChange={(e) => setText(e.target.value)}
+          disabled={loading || uploading}
         />
-        <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-          <Paperclip className="w-4 h-4" />
+
+        <Button
+          variant="outline"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+        >
+          {uploading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Paperclip className="w-4 h-4" />
+          )}
         </Button>
+
         <input
           type="file"
           ref={fileInputRef}
@@ -193,8 +212,13 @@ export default function ChatPage() {
           className="hidden"
           accept="image/*,video/*,application/pdf,.doc,.docx,.xls,.xlsx,.zip"
         />
-        <Button onClick={sendMessage}>
-          <SendHorizonal className="w-4 h-4" />
+
+        <Button onClick={sendMessage} disabled={loading || uploading}>
+          {loading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <SendHorizonal className="w-4 h-4" />
+          )}
         </Button>
       </div>
     </div>

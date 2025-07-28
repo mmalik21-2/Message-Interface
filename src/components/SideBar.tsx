@@ -2,26 +2,35 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 interface User {
   _id: string;
   firstName: string | null;
   lastName: string | null;
+  hasUnread?: boolean;
 }
 
 export default function SideBar() {
   const [users, setUsers] = useState<User[]>([]);
+  const { data: session } = useSession();
   const router = useRouter();
 
   useEffect(() => {
     const fetchUsers = async () => {
-      const res = await fetch("/api/users");
-      if (!res.ok) return;
-      const data = await res.json();
-      setUsers(data);
+      try {
+        const res = await fetch("/api/users");
+        if (!res.ok) throw new Error("Failed to fetch users");
+        const data = await res.json();
+        setUsers(data);
+      } catch (err) {
+        console.error("Fetch users error:", err);
+      }
     };
 
     fetchUsers();
+    const interval = setInterval(fetchUsers, 5000); // Refresh every 5s
+    return () => clearInterval(interval);
   }, []);
 
   const startConversation = async (recipientId: string) => {
@@ -45,9 +54,14 @@ export default function SideBar() {
           <li
             key={user._id}
             onClick={() => startConversation(user._id)}
-            className="cursor-pointer hover:bg-blue-100 p-2 rounded"
+            className="cursor-pointer hover:bg-blue-100 p-2 rounded flex items-center justify-between"
           >
-            {user.firstName || "Unknown"} {user.lastName || ""}
+            <span>
+              {user.firstName || "Unknown"} {user.lastName || ""}
+            </span>
+            {user.hasUnread && (
+              <span className="text-blue-500 font-bold ml-2">★</span>
+            )}
           </li>
         ))}
       </ul>
