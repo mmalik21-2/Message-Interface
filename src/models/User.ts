@@ -3,11 +3,11 @@ import mongoose, { Schema, Document, model, models } from "mongoose";
 export interface IUser extends Document {
   _id: mongoose.Types.ObjectId;
   email: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-  phoneNumber: string;
-  lastSeenAt?: Date; // <- NEW
+  password?: string;
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
+  profilePic?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -19,7 +19,7 @@ const UserSchema = new Schema<IUser>(
     firstName: { type: String, required: false },
     lastName: { type: String, required: false },
     phoneNumber: { type: String, required: false },
-    lastSeenAt: { type: Date, default: Date.now }, // <- NEW
+    profilePic: { type: String, required: false },
   },
   { timestamps: true }
 );

@@ -20,11 +20,7 @@ export async function POST(req: Request) {
     const userId = session.user.id;
 
     if (isGroup) {
-      if (
-        !participantIds ||
-        !Array.isArray(participantIds) ||
-        participantIds.length < 2
-      ) {
+      if (!participantIds || participantIds.length < 2) {
         return NextResponse.json(
           { error: "Group must have at least 2 participants" },
           { status: 400 }
@@ -32,13 +28,7 @@ export async function POST(req: Request) {
       }
 
       const participants = [...new Set([userId, ...participantIds])].map(
-        (id: string) => {
-          try {
-            return new mongoose.Types.ObjectId(id);
-          } catch {
-            throw new Error(`Invalid participant ID: ${id}`);
-          }
-        }
+        (id: string) => new mongoose.Types.ObjectId(id)
       );
 
       const newConvo = await Conversation.create({
@@ -47,14 +37,13 @@ export async function POST(req: Request) {
         groupName: groupName || "Group Chat",
       });
 
-      const populatedConvo = await Conversation.findById(newConvo._id)
-        .populate("participants", "firstName lastName")
+      const populated = await Conversation.findById(newConvo._id)
+        .populate("participants", "firstName lastName profilePic")
         .lean();
 
-      return NextResponse.json(populatedConvo);
+      return NextResponse.json(populated);
     }
 
-    // One-to-one chat
     if (!recipientId) {
       return NextResponse.json(
         { error: "Recipient ID required" },
@@ -62,20 +51,9 @@ export async function POST(req: Request) {
       );
     }
 
-    let recipientObjectId: mongoose.Types.ObjectId;
-    let currentUserObjectId: mongoose.Types.ObjectId;
+    const recipientObjectId = new mongoose.Types.ObjectId(recipientId);
+    const currentUserObjectId = new mongoose.Types.ObjectId(userId);
 
-    try {
-      recipientObjectId = new mongoose.Types.ObjectId(recipientId);
-      currentUserObjectId = new mongoose.Types.ObjectId(userId);
-    } catch {
-      return NextResponse.json(
-        { error: `Invalid recipient ID: ${recipientId}` },
-        { status: 400 }
-      );
-    }
-
-    // Check for existing conversation
     const existing = await Conversation.findOne({
       participants: {
         $all: [currentUserObjectId, recipientObjectId],
@@ -85,11 +63,10 @@ export async function POST(req: Request) {
     });
 
     if (existing) {
-      const populatedConvo = await Conversation.findById(existing._id)
-        .populate("participants", "firstName lastName")
+      const populated = await Conversation.findById(existing._id)
+        .populate("participants", "firstName lastName profilePic")
         .lean();
-
-      return NextResponse.json(populatedConvo);
+      return NextResponse.json(populated);
     }
 
     const newConvo = await Conversation.create({
@@ -97,17 +74,14 @@ export async function POST(req: Request) {
       isGroup: false,
     });
 
-    const populatedConvo = await Conversation.findById(newConvo._id)
-      .populate("participants", "firstName lastName")
+    const populated = await Conversation.findById(newConvo._id)
+      .populate("participants", "firstName lastName profilePic")
       .lean();
 
-    return NextResponse.json(populatedConvo);
+    return NextResponse.json(populated);
   } catch (error: any) {
     console.error("POST /api/conversations error:", error.message);
-    return NextResponse.json(
-      { error: `Server error: ${error.message}` },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
@@ -120,30 +94,21 @@ export async function GET() {
     }
 
     const userId = session.user.id;
-    let userObjectId: mongoose.Types.ObjectId;
-
-    try {
-      userObjectId = new mongoose.Types.ObjectId(userId);
-    } catch {
-      return NextResponse.json(
-        { error: `Invalid user ID: ${userId}` },
-        { status: 400 }
-      );
-    }
+    const userObjectId = new mongoose.Types.ObjectId(userId);
 
     const conversations = await Conversation.find({
       participants: userObjectId,
     })
-      .populate("participants", "firstName lastName")
+      .populate("participants", "firstName lastName profilePic")
       .populate({
         path: "lastMessage",
         select: "text imageUrl videoUrl fileUrl createdAt",
         options: { strictPopulate: false },
       })
-      .sort({ "lastMessage.createdAt": -1 })
+      .sort({ updatedAt: -1 }) // safer fallback sort
       .lean();
 
-    const transformedConversations = conversations.map((conv) => ({
+    const transformed = conversations.map((conv) => ({
       ...conv,
       lastMessage: conv.lastMessage
         ? {
@@ -152,21 +117,17 @@ export async function GET() {
               (conv.lastMessage.imageUrl
                 ? "Image"
                 : conv.lastMessage.videoUrl
-                ? "Video"
-                : conv.lastMessage.fileUrl
-                ? "File"
-                : "No content"),
+                  ? "Video"
+                  : conv.lastMessage.fileUrl
+                    ? "File"
+                    : "No content"),
             createdAt: conv.lastMessage.createdAt,
           }
         : null,
     }));
 
-    return NextResponse.json(transformedConversations);
+    return NextResponse.json(transformed);
   } catch (error: any) {
-    console.error("GET /api/conversations error:", error.message);
-    return NextResponse.json(
-      { error: `Server error: ${error.message}` },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
