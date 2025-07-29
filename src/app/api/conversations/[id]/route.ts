@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
@@ -19,7 +19,7 @@ interface Conversation {
 }
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   await connectToDatabase();
