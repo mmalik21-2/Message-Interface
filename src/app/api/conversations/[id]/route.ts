@@ -18,15 +18,23 @@ interface Conversation {
   lastMessage?: { _id: string; text: string; createdAt: string };
 }
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest) {
   await connectToDatabase();
-  const session = await getServerSession(authOptions);
-  if (!session?.user) return new Response("Unauthorized", { status: 401 });
 
-  const conversation = (await Conversation.findById(params.id)
+  const session = await getServerSession(authOptions);
+  if (!session?.user) {
+    return new NextResponse("Unauthorized", { status: 401 });
+  }
+
+  // Extract ID from URL
+  const url = new URL(request.url);
+  const id = url.pathname.split("/").pop(); // get the last segment of the path
+
+  if (!id) {
+    return new NextResponse("Conversation ID is required", { status: 400 });
+  }
+
+  const conversation = (await Conversation.findById(id)
     .populate("participants", "firstName lastName")
     .lean()) as unknown as Conversation;
 
@@ -37,9 +45,11 @@ export async function GET(
     );
   }
 
-  if (
-    !conversation.participants.some((p) => p._id.toString() === session.user.id)
-  ) {
+  const isAuthorized = conversation.participants.some(
+    (p) => p._id.toString() === session.user.id
+  );
+
+  if (!isAuthorized) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
