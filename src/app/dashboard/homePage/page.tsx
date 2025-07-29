@@ -1,8 +1,10 @@
-// app/page.tsx
+"use client";
 import SideBar from "@/components/SideBar";
+import { useSession } from "next-auth/react";
 
 export default function HomePage() {
-  return (
+  const { data: session } = useSession();
+  return session ? (
     <div className="flex h-screen">
       <SideBar />
       {/* Optional placeholder if you want a default message panel */}
@@ -10,5 +12,5 @@ export default function HomePage() {
         Select a conversation to start chatting
       </div>
     </div>
-  );
+  ) : null;
 }

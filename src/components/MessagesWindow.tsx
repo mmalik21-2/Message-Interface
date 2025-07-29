@@ -10,7 +10,6 @@ import clsx from "clsx";
 import { Paperclip, SendHorizonal, Loader2, ArrowDown } from "lucide-react";
 import Image from "next/image";
 import { Textarea } from "@/components/ui/textarea";
-import SideBar from "@/components/SideBar";
 
 interface Message {
   _id: string;
@@ -43,6 +42,9 @@ export default function ChatPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
+
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [zoomed, setZoomed] = useState(false);
 
   useEffect(() => {
     if (lastMessageRef.current) {
@@ -162,7 +164,6 @@ export default function ChatPage() {
                   .join(", ")}
           </h2>
 
-          {/* Show up to 5 group member names if it's a group */}
           {conversation?.isGroup && (
             <p className="text-sm text-gray-400 mt-1">
               {"You"}
@@ -207,7 +208,8 @@ export default function ChatPage() {
                       height={200}
                       src={msg.imageUrl}
                       alt="Uploaded"
-                      className="rounded-lg max-w-[200px] border border-gray-700"
+                      className="rounded-lg max-w-[200px] border border-gray-700 cursor-pointer"
+                      onClick={() => setSelectedImage(msg.imageUrl!)}
                     />
                   )}
 
@@ -251,6 +253,43 @@ export default function ChatPage() {
           <div ref={bottomRef} />
         </Card>
 
+        {/* Image Modal */}
+        {selectedImage && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80">
+            <div className="relative max-w-[90vw] max-h-[90vh] overflow-hidden">
+              <button
+                onClick={() => setSelectedImage(null)}
+                className="absolute top-2 right-2 text-white bg-gray-800 hover:bg-gray-700 p-2 rounded-full z-50"
+              >
+                ✕
+              </button>
+              <button
+                onClick={() => setZoomed((prev) => !prev)}
+                className="absolute top-2 left-2 text-white bg-gray-800 hover:bg-gray-700 p-2 rounded-full z-50"
+              >
+                {zoomed ? "–" : "+"}
+              </button>
+              <div
+                className={clsx("transition-transform duration-300", {
+                  "scale-150": zoomed,
+                  "scale-100": !zoomed,
+                })}
+                style={{ maxHeight: "90vh", maxWidth: "90vw" }}
+              >
+                <Image
+                  src={selectedImage}
+                  alt="Full View"
+                  layout="intrinsic"
+                  width={800}
+                  height={600}
+                  className="rounded-lg object-contain max-h-[90vh] max-w-[90vw]"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Input Section */}
         <div className="mt-4 flex items-center gap-2">
           <Textarea
             className="flex-1 h-10 resize-none overflow-hidden border border-gray-700"

@@ -70,17 +70,17 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-cyan-400 to-green-300 p-6">
-      <Card className="w-full max-w-2xl shadow-xl rounded-xl">
+      <Card className="w-full max-w-2xl bg-black text-white shadow-xl rounded-xl">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center text-gray-800">
+          <CardTitle className="text-2xl font-bold text-center">
             Create your account
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <p className="text-gray-600 text-center text-sm">
+          <p className="text-gray-300 text-center text-sm">
             Let&apos;s get you all set up so you can access your account.
           </p>
-          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+          {error && <p className="text-red-400 text-sm text-center">{error}</p>}
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(handleSubmit)}
@@ -92,9 +92,10 @@ export default function RegisterPage() {
                   name="firstName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>First Name</FormLabel>
+                      <FormLabel className="text-white">First Name</FormLabel>
                       <FormControl>
                         <Input
+                          className="bg-gray-800 text-white border-gray-600 placeholder-gray-400"
                           placeholder="First Name"
                           disabled={loading}
                           {...field}
@@ -109,9 +110,10 @@ export default function RegisterPage() {
                   name="lastName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Last Name</FormLabel>
+                      <FormLabel className="text-white">Last Name</FormLabel>
                       <FormControl>
                         <Input
+                          className="bg-gray-800 text-white border-gray-600 placeholder-gray-400"
                           placeholder="Last Name"
                           disabled={loading}
                           {...field}
@@ -128,9 +130,10 @@ export default function RegisterPage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel className="text-white">Email</FormLabel>
                       <FormControl>
                         <Input
+                          className="bg-gray-800 text-white border-gray-600 placeholder-gray-400"
                           placeholder="Email"
                           type="email"
                           disabled={loading}
@@ -146,9 +149,10 @@ export default function RegisterPage() {
                   name="phoneNumber"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Phone Number</FormLabel>
+                      <FormLabel className="text-white">Phone Number</FormLabel>
                       <FormControl>
                         <Input
+                          className="bg-gray-800 text-white border-gray-600 placeholder-gray-400"
                           placeholder="Phone Number"
                           type="tel"
                           disabled={loading}
@@ -165,9 +169,10 @@ export default function RegisterPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel className="text-white">Password</FormLabel>
                     <FormControl>
                       <Input
+                        className="bg-gray-800 text-white border-gray-600 placeholder-gray-400"
                         placeholder="Password"
                         type="password"
                         disabled={loading}
@@ -183,9 +188,12 @@ export default function RegisterPage() {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
+                    <FormLabel className="text-white">
+                      Confirm Password
+                    </FormLabel>
                     <FormControl>
                       <Input
+                        className="bg-gray-800 text-white border-gray-600 placeholder-gray-400"
                         placeholder="Confirm Password"
                         type="password"
                         disabled={loading}
@@ -196,26 +204,26 @@ export default function RegisterPage() {
                   </FormItem>
                 )}
               />
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 text-sm">
                 <input
                   type="checkbox"
-                  className="h-4 w-4 text-black border-gray-300 rounded"
+                  className="h-4 w-4 text-white bg-gray-700 border-gray-500 rounded"
                   disabled={loading}
                 />
-                <label className="text-sm text-gray-700">
+                <label className="text-gray-300">
                   I agree to the Terms & Privacy Policy
                 </label>
               </div>
               <Button
                 type="submit"
-                className="w-full bg-black text-white h-10 text-sm font-semibold hover:bg-white hover:text-black transition duration-300"
+                className="w-full bg-white text-black hover:bg-gray-200 font-semibold h-10 text-sm"
                 disabled={loading}
               >
                 {loading ? "Creating account..." : "Create Account"}
               </Button>
-              <div className="text-center text-sm text-gray-600">
+              <div className="text-center text-sm text-gray-300">
                 Already have an account?{" "}
-                <a href="/login" className="text-blue-600 hover:underline">
+                <a href="/login" className="text-blue-400 hover:underline">
                   Login
                 </a>
               </div>

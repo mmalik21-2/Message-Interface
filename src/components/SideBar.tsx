@@ -3,11 +3,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { ModeToggle } from "./ModeToggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus } from "lucide-react";
+import { Plus, LogOut } from "lucide-react";
 import Link from "next/link";
 import {
   Dialog,
@@ -82,7 +82,7 @@ export default function SideBar() {
       );
 
       if (existingConv) {
-        router.push(`/messages/${existingConv._id}`);
+        router.push(`/dashboard/messages/${existingConv._id}`);
         return;
       }
 
@@ -94,7 +94,7 @@ export default function SideBar() {
 
       const conversation = await res.json();
       setConversations((prev) => [conversation, ...prev]);
-      router.push(`/messages/${conversation._id}`);
+      router.push(`/dashboard/messages/${conversation._id}`);
     } catch (error: any) {
       alert(`Error: ${error.message}`);
     }
@@ -132,7 +132,7 @@ export default function SideBar() {
       setSelectedUsers([]);
       setGroupName("");
       setIsGroupModalOpen(false);
-      router.push(`/messages/${newConversation._id}`);
+      router.push(`/dashboard/messages/${newConversation._id}`);
     } catch (error: any) {
       alert(`Error: ${error.message}`);
     }
@@ -140,16 +140,8 @@ export default function SideBar() {
 
   return (
     <>
-      {/* Full-screen Group Modal */}
+      {/* Group Modal */}
       <Dialog open={isGroupModalOpen} onOpenChange={setIsGroupModalOpen}>
-        {/* <DialogTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="w-10 h-10 rounded-full"
-          ></Button>
-        </DialogTrigger> */}
-
         <DialogContent className="w-full sm:max-w-2xl max-h-screen overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create Group</DialogTitle>
@@ -210,10 +202,10 @@ export default function SideBar() {
       </Dialog>
 
       {/* Sidebar */}
-      <aside className="w-64 h-screen border-r overflow-y-auto ">
+      <aside className="w-64 h-screen border-r overflow-y-auto">
         <div className="px-4 py-4 border-b flex items-center justify-between">
           <h2 className="text-xl font-semibold">Chats</h2>
-          <div className="flex items-center gap-0">
+          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
@@ -222,9 +214,20 @@ export default function SideBar() {
             >
               <Plus className="w-5 h-5" />
             </Button>
+
             <div className="w-10 h-10 rounded-full">
               <ModeToggle />
             </div>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => signOut({ callbackUrl: "/" })}
+              className="w-10 h-10 rounded-full"
+              title="Logout"
+            >
+              <LogOut className="w-5 h-5" />
+            </Button>
           </div>
         </div>
 
@@ -262,13 +265,13 @@ export default function SideBar() {
                   return (
                     <li key={conv._id}>
                       <Link
-                        href={`/messages/${conv._id}`}
+                        href={`/dashboard/messages/${conv._id}`}
                         className="cursor-pointer hover:bg-gradient-to-r from-cyan-400 to-green-300 p-2 rounded block"
                       >
                         <div className="flex items-center gap-2">
                           <span className="font-medium">{displayName}</span>
                           {conv.isGroup && (
-                            <span className="text-xs bg-gray-700 text-white px-2 py-1 rounded">
+                            <span className="text-xs bg-gray-700 text-white px Deg2 py-1 rounded">
                               Group
                             </span>
                           )}
