@@ -142,13 +142,13 @@ export default function SideBar() {
     <>
       {/* Full-screen Group Modal */}
       <Dialog open={isGroupModalOpen} onOpenChange={setIsGroupModalOpen}>
-        <DialogTrigger asChild>
+        {/* <DialogTrigger asChild>
           <Button
             variant="ghost"
             size="icon"
             className="w-10 h-10 rounded-full"
           ></Button>
-        </DialogTrigger>
+        </DialogTrigger> */}
 
         <DialogContent className="w-full sm:max-w-2xl max-h-screen overflow-y-auto">
           <DialogHeader>
@@ -210,8 +210,8 @@ export default function SideBar() {
       </Dialog>
 
       {/* Sidebar */}
-      <aside className="w-64 h-screen p-4 border-r overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
+      <aside className="w-64 h-screen border-r overflow-y-auto ">
+        <div className="px-4 py-4 border-b flex items-center justify-between">
           <h2 className="text-xl font-semibold">Chats</h2>
           <div className="flex items-center gap-0">
             <Button
@@ -228,61 +228,64 @@ export default function SideBar() {
           </div>
         </div>
 
-        <ul className="space-y-2">
-          <li>
-            <h3 className="text-lg font-medium mb-2">Users</h3>
-            <ul className="space-y-1">
-              {users.map((user) => (
-                <li
-                  key={user._id}
-                  onClick={() => startConversation(user._id)}
-                  className="cursor-pointer hover:bg-gradient-to-r from-cyan-400 to-green-300 p-2 rounded"
-                >
-                  {user.firstName || "Unknown"} {user.lastName || ""}
-                </li>
-              ))}
-            </ul>
-          </li>
-
-          <li>
-            <h3 className="text-lg font-medium mb-2">Conversations</h3>
-            <ul className="space-y-1">
-              {conversations.map((conv) => {
-                const displayName = conv.isGroup
-                  ? conv.groupName || "Group Chat"
-                  : conv.participants
-                      .filter((p) => p._id !== session?.user?.id)
-                      .map(
-                        (p) => `${p.firstName || "Unknown"} ${p.lastName || ""}`
-                      )
-                      .join(", ");
-
-                return (
-                  <li key={conv._id}>
-                    <Link
-                      href={`/messages/${conv._id}`}
-                      className="cursor-pointer hover:bg-gradient-to-r from-cyan-400 to-green-300 p-2 rounded block"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{displayName}</span>
-                        {conv.isGroup && (
-                          <span className="text-xs bg-gray-700 text-white px-2 py-1 rounded">
-                            Group
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-400 truncate">
-                        {conv.lastMessage?.text
-                          ? conv.lastMessage.text
-                          : "No messages yet"}
-                      </p>
-                    </Link>
+        <div className="px-4 py-4">
+          <ul className="space-y-4">
+            <li>
+              <h3 className="text-lg font-medium mb-2">Users</h3>
+              <ul className="space-y-1">
+                {users.map((user) => (
+                  <li
+                    key={user._id}
+                    onClick={() => startConversation(user._id)}
+                    className="cursor-pointer hover:bg-gradient-to-r from-cyan-400 to-green-300 p-2 rounded"
+                  >
+                    {user.firstName || "Unknown"} {user.lastName || ""}
                   </li>
-                );
-              })}
-            </ul>
-          </li>
-        </ul>
+                ))}
+              </ul>
+            </li>
+
+            <li>
+              <h3 className="text-lg font-medium mb-2">Conversations</h3>
+              <ul className="space-y-1">
+                {conversations.map((conv) => {
+                  const displayName = conv.isGroup
+                    ? conv.groupName || "Group Chat"
+                    : conv.participants
+                        .filter((p) => p._id !== session?.user?.id)
+                        .map(
+                          (p) =>
+                            `${p.firstName || "Unknown"} ${p.lastName || ""}`
+                        )
+                        .join(", ");
+
+                  return (
+                    <li key={conv._id}>
+                      <Link
+                        href={`/messages/${conv._id}`}
+                        className="cursor-pointer hover:bg-gradient-to-r from-cyan-400 to-green-300 p-2 rounded block"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{displayName}</span>
+                          {conv.isGroup && (
+                            <span className="text-xs bg-gray-700 text-white px-2 py-1 rounded">
+                              Group
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-400 truncate">
+                          {conv.lastMessage?.text
+                            ? conv.lastMessage.text
+                            : "No messages yet"}
+                        </p>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </li>
+          </ul>
+        </div>
       </aside>
     </>
   );
