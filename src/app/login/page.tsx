@@ -35,21 +35,23 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="container mx-auto p-4 min-h-screen flex items-center justify-center">
-      <Card className="w-full max-w-lg">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-cyan-400 to-green-300 p-4">
+      <Card className="w-full max-w-lg bg-black text-white shadow-xl rounded-xl">
         <CardHeader>
-          <CardTitle>Login</CardTitle>
+          <CardTitle className="text-center text-2xl font-bold">
+            Login
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <p className="text-gray-600 text-sm">
+          <p className="text-sm text-center text-gray-300">
             Login to access your Hug Harmony account
           </p>
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+          {error && <p className="text-red-400 text-sm text-center">{error}</p>}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-gray-700">Email</label>
+              <label className="text-sm font-medium">Email</label>
               <Input
-                className="h-10 text-sm mt-1"
+                className="h-10 text-sm mt-1 bg-gray-800 text-white border-gray-600 placeholder-gray-400"
                 name="email"
                 type="email"
                 value={email}
@@ -59,11 +61,9 @@ export default function LoginPage() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700">
-                Password
-              </label>
+              <label className="text-sm font-medium">Password</label>
               <Input
-                className="h-10 text-sm mt-1"
+                className="h-10 text-sm mt-1 bg-gray-800 text-white border-gray-600 placeholder-gray-400"
                 name="password"
                 type="password"
                 value={password}
@@ -83,21 +83,21 @@ export default function LoginPage() {
               </div>
               <a
                 href="/forgot-password"
-                className="text-blue-500 hover:underline"
+                className="text-blue-400 hover:underline"
               >
                 Forgot Password
               </a>
             </div>
             <Button
               type="submit"
-              className="w-full bg-black text-white h-10 text-sm"
+              className="w-full bg-white text-black hover:bg-gray-200 font-semibold h-10 text-sm"
               disabled={loading}
             >
               {loading ? "Logging in..." : "Login"}
             </Button>
-            <div className="text-center text-sm text-gray-600">
+            <div className="text-center text-sm text-gray-300">
               Don’t have an account?{" "}
-              <a href="/register" className="text-blue-500 hover:underline">
+              <a href="/register" className="text-blue-400 hover:underline">
                 Register
               </a>
             </div>

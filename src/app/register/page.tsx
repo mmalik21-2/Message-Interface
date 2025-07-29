@@ -35,7 +35,7 @@ const formSchema = z
 export default function RegisterPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false); // 🔸 Add loading state
+  const [loading, setLoading] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -52,26 +52,14 @@ export default function RegisterPage() {
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
     setError(null);
-
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          firstName: values.firstName,
-          lastName: values.lastName,
-          email: values.email,
-          phoneNumber: values.phoneNumber,
-          password: values.password,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
       });
-
       const data = await res.json();
-
       if (!res.ok) throw new Error(data.error || "Registration failed");
-
       router.push("/login");
     } catch (error: any) {
       setError(error.message);
@@ -81,17 +69,18 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="container mx-auto p-4 min-h-screen flex items-center justify-center">
-      <Card className="w-full max-w-lg">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-cyan-400 to-green-300 p-6">
+      <Card className="w-full max-w-2xl shadow-xl rounded-xl">
         <CardHeader>
-          <CardTitle>Sign up</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center text-gray-800">
+            Create your account
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <p className="text-gray-600 text-sm">
-            Let&apos;s get you all set up so you can access your personal
-            account.
+          <p className="text-gray-600 text-center text-sm">
+            Let&apos;s get you all set up so you can access your account.
           </p>
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(handleSubmit)}
@@ -103,18 +92,15 @@ export default function RegisterPage() {
                   name="firstName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium text-gray-700">
-                        First Name
-                      </FormLabel>
+                      <FormLabel>First Name</FormLabel>
                       <FormControl>
                         <Input
-                          className="h-10 text-sm mt-1"
                           placeholder="First Name"
                           disabled={loading}
                           {...field}
                         />
                       </FormControl>
-                      <FormMessage className="text-xs" />
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -123,18 +109,15 @@ export default function RegisterPage() {
                   name="lastName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium text-gray-700">
-                        Last Name
-                      </FormLabel>
+                      <FormLabel>Last Name</FormLabel>
                       <FormControl>
                         <Input
-                          className="h-10 text-sm mt-1"
                           placeholder="Last Name"
                           disabled={loading}
                           {...field}
                         />
                       </FormControl>
-                      <FormMessage className="text-xs" />
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -145,19 +128,16 @@ export default function RegisterPage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium text-gray-700">
-                        Email
-                      </FormLabel>
+                      <FormLabel>Email</FormLabel>
                       <FormControl>
                         <Input
-                          className="h-10 text-sm mt-1"
                           placeholder="Email"
                           type="email"
                           disabled={loading}
                           {...field}
                         />
                       </FormControl>
-                      <FormMessage className="text-xs" />
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -166,19 +146,16 @@ export default function RegisterPage() {
                   name="phoneNumber"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium text-gray-700">
-                        Phone Number
-                      </FormLabel>
+                      <FormLabel>Phone Number</FormLabel>
                       <FormControl>
                         <Input
-                          className="h-10 text-sm mt-1"
                           placeholder="Phone Number"
                           type="tel"
                           disabled={loading}
                           {...field}
                         />
                       </FormControl>
-                      <FormMessage className="text-xs" />
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -188,19 +165,16 @@ export default function RegisterPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-medium text-gray-700">
-                      Password
-                    </FormLabel>
+                    <FormLabel>Password</FormLabel>
                     <FormControl>
                       <Input
-                        className="h-10 text-sm mt-1"
                         placeholder="Password"
                         type="password"
                         disabled={loading}
                         {...field}
                       />
                     </FormControl>
-                    <FormMessage className="text-xs" />
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -209,42 +183,39 @@ export default function RegisterPage() {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-medium text-gray-700">
-                      Confirm Password
-                    </FormLabel>
+                    <FormLabel>Confirm Password</FormLabel>
                     <FormControl>
                       <Input
-                        className="h-10 text-sm mt-1"
                         placeholder="Confirm Password"
                         type="password"
                         disabled={loading}
                         {...field}
                       />
                     </FormControl>
-                    <FormMessage className="text-xs" />
+                    <FormMessage />
                   </FormItem>
                 )}
               />
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-black border-gray-300 rounded"
                   disabled={loading}
                 />
-                <label className="text-sm text-gray-600">
-                  I agree to all the Terms and Privacy Policies
+                <label className="text-sm text-gray-700">
+                  I agree to the Terms & Privacy Policy
                 </label>
               </div>
               <Button
                 type="submit"
-                className="w-full bg-black text-white h-10 text-sm"
+                className="w-full bg-black text-white h-10 text-sm font-semibold hover:bg-white hover:text-black transition duration-300"
                 disabled={loading}
               >
-                {loading ? "Creating account..." : "Create account"}
+                {loading ? "Creating account..." : "Create Account"}
               </Button>
               <div className="text-center text-sm text-gray-600">
                 Already have an account?{" "}
-                <a href="/login" className="text-blue-500 hover:underline">
+                <a href="/login" className="text-blue-600 hover:underline">
                   Login
                 </a>
               </div>
