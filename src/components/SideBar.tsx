@@ -33,12 +33,18 @@ interface Conversation {
   lastMessage?: { text: string; createdAt: Date };
 }
 
+interface FormData {
+  phoneNumber: string;
+  firstName: string;
+  lastName: string;
+  profilePic: string;
+}
+
 export default function SideBar() {
   const { data: session, status } = useSession();
   const userId = session?.user?.id;
   const firstName = session?.user?.firstName || "";
   const lastName = session?.user?.lastName || "";
-  const profilePic = session?.user?.profilePic || "";
 
   const [users, setUsers] = useState<User[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -46,6 +52,16 @@ export default function SideBar() {
   const [groupName, setGroupName] = useState("");
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [creatingGroup, setCreatingGroup] = useState(false);
+
+  const [formData, setFormData] = useState<FormData>({
+    phoneNumber: "",
+    firstName: "",
+    lastName: "",
+    profilePic: "",
+  });
+  const [error, setError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [imageBlob, setImageBlob] = useState<Blob | null>(null);
 
   const router = useRouter();
   const params = useParams();
@@ -135,13 +151,15 @@ export default function SideBar() {
   const renderProfileImage = (user: User) => {
     if (user.profilePic) {
       return (
-        <Image
-          src={user.profilePic}
-          alt="Profile"
-          width={32}
-          height={32}
-          className="rounded-full object-cover"
-        />
+        <div className="h-10 w-10 rounded-full overflow-hidden border border-white shadow-sm">
+          <Image
+            src={user.profilePic}
+            alt="Profile"
+            width={32}
+            height={32}
+            className="w-full h-full object-cover"
+          />
+        </div>
       );
     }
     const initials = `${user.firstName?.[0] || "U"}${user.lastName?.[0] || ""}`;
@@ -151,6 +169,35 @@ export default function SideBar() {
       </div>
     );
   };
+
+  useEffect(() => {
+    if (status === "authenticated" && session?.user?.id) {
+      fetch(`/api/user/${session.user.id}`)
+        .then(async (res) => {
+          if (!res.ok) {
+            throw new Error(
+              `API error: ${res.status} - ${
+                res.status === 404 ? "User not found" : await res.text()
+              }`
+            );
+          }
+          return res.json();
+        })
+        .then((data) => {
+          setFormData({
+            phoneNumber: data.phoneNumber || "",
+            firstName: data.firstName || "",
+            lastName: data.lastName || "",
+            profilePic: data.profilePic || "",
+          });
+          setPreview(data.profilePic || null);
+        })
+        .catch((err) => setError(`Failed to load profile: ${err.message}`));
+    } else if (status === "unauthenticated") {
+      setError("Please sign in to view your profile");
+      router.push("/api/auth/signin");
+    }
+  }, [session, status, router]);
 
   return (
     <>
@@ -211,14 +258,16 @@ export default function SideBar() {
         <div className="px-4 py-4 border-b">
           <div className="flex items-center justify-between gap-2">
             <Link href={`/dashboard/profile/${userId}`}>
-              {profilePic ? (
-                <Image
-                  src={profilePic}
-                  alt={`${firstName} ${lastName}`}
-                  width={40}
-                  height={40}
-                  className="rounded-full object-cover"
-                />
+              {preview ? (
+                <div className="h-10 w-10 rounded-full overflow-hidden border border-white shadow-sm">
+                  <Image
+                    src={preview}
+                    alt={`${firstName} ${lastName}`}
+                    width={40}
+                    height={40}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
               ) : (
                 <div className="h-10 w-10 rounded-full bg-gray-600 flex items-center justify-center text-white">
                   {(firstName?.[0] || "U") + (lastName?.[0] || "")}

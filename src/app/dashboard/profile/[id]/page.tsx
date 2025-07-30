@@ -30,15 +30,13 @@ export default function ProfileForm() {
   const [imageBlob, setImageBlob] = useState<Blob | null>(null);
 
   useEffect(() => {
-    if (status === "authenticated" && session?.user) {
-      fetch("/api/user")
+    if (status === "authenticated" && session?.user?.id) {
+      fetch(`/api/user/${session.user.id}`)
         .then(async (res) => {
           if (!res.ok) {
             throw new Error(
               `API error: ${res.status} - ${
-                res.status === 404
-                  ? "User API route not found"
-                  : await res.text()
+                res.status === 404 ? "User not found" : await res.text()
               }`
             );
           }
@@ -93,15 +91,13 @@ export default function ProfileForm() {
         }
 
         const uploadData = await uploadRes.json();
-        console.log("Upload Response:", uploadData); // Debug upload URL
         if (!uploadData.url) {
           throw new Error("No URL returned from upload");
         }
         profilePicUrl = uploadData.url;
-        setFormData({ ...formData, profilePic: profilePicUrl }); // Update formData
       }
 
-      const res = await fetch("/api/user", {
+      const res = await fetch(`/api/user/${session?.user?.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -110,12 +106,11 @@ export default function ProfileForm() {
           firstName: formData.firstName,
           lastName: formData.lastName,
           phoneNumber: formData.phoneNumber,
-          profilePic: profilePicUrl || "", // Ensure profilePic is sent
+          profilePic: profilePicUrl || "",
         }),
       });
 
       const data = await res.json();
-      console.log("PATCH Response:", data); // Debug PATCH response
 
       if (!res.ok) {
         throw new Error(data.error || `Profile update failed: ${res.status}`);
@@ -126,10 +121,10 @@ export default function ProfileForm() {
       );
       router.push("/dashboard/homePage");
     } catch (error: any) {
-      console.error(error);
       setError(error.message || "Error updating profile");
     }
   };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-cyan-400 to-green-300 p-4">
       <Card className="w-full max-w-lg bg-black text-white shadow-xl rounded-xl">
@@ -140,17 +135,21 @@ export default function ProfileForm() {
         </CardHeader>
         <CardContent className="space-y-6">
           {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+
           {preview && (
-            <div className="flex justify-center">
-              <Image
-                src={preview}
-                alt="Profile Preview"
-                width={100}
-                height={100}
-                className="rounded-full object-cover"
-              />
+            <div className="flex justify-center mb-4">
+              <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-white shadow-md">
+                <Image
+                  src={preview}
+                  alt="Profile Preview"
+                  width={96}
+                  height={96}
+                  className="w-full h-full object-cover"
+                />
+              </div>
             </div>
           )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="text-sm font-medium">Profile Picture</label>
