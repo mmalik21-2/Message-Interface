@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { getServerSession } from "next-auth/next";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import User from "@/models/User";
 import { authOptions } from "@/lib/auth";
@@ -13,9 +13,13 @@ interface UpdateBody {
   profilePic?: string;
 }
 
+interface RouteContext {
+  id: string;
+}
+
 export async function GET(
-  req: Request,
-  { context }: { context: { id: string } }
+  req: NextRequest,
+  { routeContext }: { routeContext: RouteContext }
 ) {
   try {
     await connectToDatabase();
@@ -24,7 +28,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = context;
+    const { id } = routeContext;
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     }
@@ -54,7 +58,7 @@ export async function GET(
 
 export async function PATCH(
   req: Request,
-  { context }: { context: { id: string } }
+  { routeContext }: { routeContext: RouteContext }
 ) {
   try {
     await connectToDatabase();
@@ -63,7 +67,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = context;
+    const { id } = routeContext;
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     }
