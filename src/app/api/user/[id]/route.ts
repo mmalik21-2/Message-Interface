@@ -15,7 +15,7 @@ interface UpdateBody {
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { context }: { context: { id: string } }
 ) {
   try {
     await connectToDatabase();
@@ -24,7 +24,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = context;
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     }
@@ -54,7 +54,7 @@ export async function GET(
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { context }: { context: { id: string } }
 ) {
   try {
     await connectToDatabase();
@@ -63,7 +63,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = context;
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     }
