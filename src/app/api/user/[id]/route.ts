@@ -13,13 +13,9 @@ interface UpdateBody {
   profilePic?: string;
 }
 
-interface RouteContext {
-  id: string;
-}
-
 export async function GET(
   req: NextRequest,
-  { params }: { params: RouteContext }
+  context: { params: { id: string } }
 ) {
   try {
     await connectToDatabase();
@@ -28,7 +24,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = context.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     }
@@ -56,10 +52,7 @@ export async function GET(
   }
 }
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: RouteContext }
-) {
+export async function PATCH(req: Request, context: { params: { id: string } }) {
   try {
     await connectToDatabase();
     const session = await getServerSession(authOptions);
@@ -67,7 +60,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = context.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     }
