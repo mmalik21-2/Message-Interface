@@ -19,7 +19,7 @@ interface RouteContext {
 
 export async function GET(
   req: NextRequest,
-  { routeContext }: { routeContext: RouteContext }
+  { params }: { params: RouteContext }
 ) {
   try {
     await connectToDatabase();
@@ -28,7 +28,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = routeContext;
+    const { id } = params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     }
@@ -58,7 +58,7 @@ export async function GET(
 
 export async function PATCH(
   req: Request,
-  { routeContext }: { routeContext: RouteContext }
+  { params }: { params: RouteContext }
 ) {
   try {
     await connectToDatabase();
@@ -67,7 +67,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = routeContext;
+    const { id } = params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     }
