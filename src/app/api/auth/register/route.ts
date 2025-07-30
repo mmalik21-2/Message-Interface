@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import User from "@/models/User";
+import { generateOTP, sendOTPEmail } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,16 +36,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const otp = generateOTP();
     await User.create({
       email,
       password: password,
       firstName,
       lastName,
       phoneNumber,
+      otp,
+      otpExpires: new Date(Date.now() + 10 * 60 * 1000), // OTP expires in 10 minutes
     });
 
+    await sendOTPEmail(email, otp);
+
     return NextResponse.json(
-      { message: "User registered successfully" },
+      { message: "User registered, OTP sent" },
       { status: 201 }
     );
   } catch (error: any) {

@@ -8,6 +8,9 @@ export interface IUser extends Document {
   lastName?: string;
   phoneNumber?: string;
   profilePic?: string;
+  otp?: string;
+  otpExpires?: Date;
+  isVerified?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -20,6 +23,9 @@ const UserSchema = new Schema<IUser>(
     lastName: { type: String, required: false },
     phoneNumber: { type: String, required: false },
     profilePic: { type: String, required: false },
+    otp: { type: String, required: false },
+    otpExpires: { type: Date, required: false },
+    isVerified: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

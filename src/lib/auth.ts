@@ -21,7 +21,7 @@ export const authOptions: NextAuthOptions = {
           await connectToDatabase();
 
           const user = await User.findOne({ email: credentials.email }).select(
-            "email password firstName lastName _id"
+            "email password firstName lastName _id isVerified"
           );
 
           if (!user) {
@@ -32,6 +32,11 @@ export const authOptions: NextAuthOptions = {
           // NOTE: Replace this with hashed password check in production (e.g., bcrypt)
           if (credentials.password !== user.password) {
             console.error("Invalid password");
+            return null;
+          }
+
+          if (!user.isVerified) {
+            console.error("User not verified. Please verify your OTP.");
             return null;
           }
 

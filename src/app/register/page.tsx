@@ -32,10 +32,16 @@ const formSchema = z
     path: ["confirmPassword"],
   });
 
+const otpSchema = z.object({
+  otp: z.string().min(6, "OTP must be 6 digits").max(6, "OTP must be 6 digits"),
+});
+
 export default function RegisterPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [email, setEmail] = useState("");
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -49,7 +55,12 @@ export default function RegisterPage() {
     },
   });
 
-  const handleSubmit = async (values: z.infer<typeof formSchema>) => {
+  const otpForm = useForm<z.infer<typeof otpSchema>>({
+    resolver: zodResolver(otpSchema),
+    defaultValues: { otp: "" },
+  });
+
+  const handleRegister = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
     setError(null);
     try {
@@ -60,6 +71,26 @@ export default function RegisterPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Registration failed");
+      setEmail(values.email);
+      setIsOtpSent(true);
+    } catch (error: any) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (values: z.infer<typeof otpSchema>) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp: values.otp }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "OTP verification failed");
       router.push("/login");
     } catch (error: any) {
       setError(error.message);
@@ -73,162 +104,201 @@ export default function RegisterPage() {
       <Card className="w-full max-w-2xl bg-black text-white shadow-xl rounded-xl">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-center">
-            Create your account
+            {isOtpSent ? "Verify OTP" : "Create your account"}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <p className="text-gray-300 text-center text-sm">
-            Let&apos;s get you all set up so you can access your account.
+            {isOtpSent
+              ? "Enter the OTP sent to your email."
+              : "Let’s get you all set up so you can access your account."}
           </p>
           {error && <p className="text-red-400 text-sm text-center">{error}</p>}
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(handleSubmit)}
-              className="space-y-4"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="firstName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-white">First Name</FormLabel>
-                      <FormControl>
-                        <Input
-                          className="bg-gray-800 text-white border-gray-600 placeholder-gray-400"
-                          placeholder="First Name"
-                          disabled={loading}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="lastName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-white">Last Name</FormLabel>
-                      <FormControl>
-                        <Input
-                          className="bg-gray-800 text-white border-gray-600 placeholder-gray-400"
-                          placeholder="Last Name"
-                          disabled={loading}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-white">Email</FormLabel>
-                      <FormControl>
-                        <Input
-                          className="bg-gray-800 text-white border-gray-600 placeholder-gray-400"
-                          placeholder="Email"
-                          type="email"
-                          disabled={loading}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="phoneNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-white">Phone Number</FormLabel>
-                      <FormControl>
-                        <Input
-                          className="bg-gray-800 text-white border-gray-600 placeholder-gray-400"
-                          placeholder="Phone Number"
-                          type="tel"
-                          disabled={loading}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-white">Password</FormLabel>
-                    <FormControl>
-                      <Input
-                        className="bg-gray-800 text-white border-gray-600 placeholder-gray-400"
-                        placeholder="Password"
-                        type="password"
-                        disabled={loading}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-white">
-                      Confirm Password
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        className="bg-gray-800 text-white border-gray-600 placeholder-gray-400"
-                        placeholder="Confirm Password"
-                        type="password"
-                        disabled={loading}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="flex items-center space-x-2 text-sm">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 text-white bg-gray-700 border-gray-500 rounded"
-                  disabled={loading}
-                />
-                <label className="text-gray-300">
-                  I agree to the Terms & Privacy Policy
-                </label>
-              </div>
-              <Button
-                type="submit"
-                className="w-full bg-white text-black hover:bg-gray-200 font-semibold h-10 text-sm"
-                disabled={loading}
+          {!isOtpSent ? (
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(handleRegister)}
+                className="space-y-4"
               >
-                {loading ? "Creating account..." : "Create Account"}
-              </Button>
-              <div className="text-center text-sm text-gray-300">
-                Already have an account?{" "}
-                <a href="/login" className="text-blue-400 hover:underline">
-                  Login
-                </a>
-              </div>
-            </form>
-          </Form>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="firstName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-white">First Name</FormLabel>
+                        <FormControl>
+                          <Input
+                            className="bg-gray-800 text-white border-gray-600 placeholder-gray-400"
+                            placeholder="First Name"
+                            disabled={loading}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-white">Last Name</FormLabel>
+                        <FormControl>
+                          <Input
+                            className="bg-gray-800 text-white border-gray-600 placeholder-gray-400"
+                            placeholder="Last Name"
+                            disabled={loading}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-white">Email</FormLabel>
+                        <FormControl>
+                          <Input
+                            className="bg-gray-800 text-white border-gray-600 placeholder-gray-400"
+                            placeholder="Email"
+                            type="email"
+                            disabled={loading}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="phoneNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-white">
+                          Phone Number
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            className="bg-gray-800 text-white border-gray-600 placeholder-gray-400"
+                            placeholder="Phone Number"
+                            type="tel"
+                            disabled={loading}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-white">Password</FormLabel>
+                      <FormControl>
+                        <Input
+                          className="bg-gray-800 text-white border-gray-600 placeholder-gray-400"
+                          placeholder="Password"
+                          type="password"
+                          disabled={loading}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-white">
+                        Confirm Password
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          className="bg-gray-800 text-white border-gray-600 placeholder-gray-400"
+                          placeholder="Confirm Password"
+                          type="password"
+                          disabled={loading}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex items-center space-x-2 text-sm">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 text-white bg-gray-700 border-gray-500 rounded"
+                    disabled={loading}
+                  />
+                  <label className="text-gray-300">
+                    I agree to the Terms & Privacy Policy
+                  </label>
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full bg-white text-black hover:bg-gray-200 font-semibold h-10 text-sm"
+                  disabled={loading}
+                >
+                  {loading ? "Creating account..." : "Create Account"}
+                </Button>
+                <div className="text-center text-sm text-gray-300">
+                  Already have an account?{" "}
+                  <a href="/login" className="text-blue-400 hover:underline">
+                    Login
+                  </a>
+                </div>
+              </form>
+            </Form>
+          ) : (
+            <Form {...otpForm}>
+              <form
+                onSubmit={otpForm.handleSubmit(handleVerifyOtp)}
+                className="space-y-4"
+              >
+                <FormField
+                  control={otpForm.control}
+                  name="otp"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-white">OTP</FormLabel>
+                      <FormControl>
+                        <Input
+                          className="bg-gray-800 text-white border-gray-600 placeholder-gray-400"
+                          placeholder="Enter 6-digit OTP"
+                          disabled={loading}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button
+                  type="submit"
+                  className="w-full bg-white text-black hover:bg-gray-200 font-semibold h-10 text-sm"
+                  disabled={loading}
+                >
+                  {loading ? "Verifying OTP..." : "Verify OTP"}
+                </Button>
+              </form>
+            </Form>
+          )}
         </CardContent>
       </Card>
     </div>
