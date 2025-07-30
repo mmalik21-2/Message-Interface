@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { getServerSession } from "next-auth/next";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import User from "@/models/User";
 import { authOptions } from "@/lib/auth";
@@ -13,10 +13,7 @@ interface UpdateBody {
   profilePic?: string;
 }
 
-export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(req: Request) {
   try {
     await connectToDatabase();
     const session = await getServerSession(authOptions);
@@ -24,8 +21,9 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    const url = new URL(req.url);
+    const id = url.pathname.split("/").pop(); // Extract ID from URL
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     }
 
@@ -52,10 +50,7 @@ export async function GET(
   }
 }
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(req: NextRequest) {
   try {
     await connectToDatabase();
     const session = await getServerSession(authOptions);
@@ -63,8 +58,9 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    const url = new URL(req.url);
+    const id = url.pathname.split("/").pop(); // Extract ID from URL
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     }
 
