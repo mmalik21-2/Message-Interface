@@ -31,6 +31,13 @@ export async function POST(req: Request) {
         (id: string) => new mongoose.Types.ObjectId(id)
       );
 
+      if (groupName === "Channel") {
+        return NextResponse.json(
+          { error: "Cannot create group named 'Channel'" },
+          { status: 400 }
+        );
+      }
+
       const newConvo = await Conversation.create({
         participants,
         isGroup: true,
@@ -90,6 +97,7 @@ export async function GET() {
     await connectToDatabase();
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
+      console.error("GET /api/conversations: No user ID in session");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -105,8 +113,14 @@ export async function GET() {
         select: "text imageUrl videoUrl fileUrl createdAt",
         options: { strictPopulate: false },
       })
-      .sort({ updatedAt: -1 }) // safer fallback sort
+      .sort({ updatedAt: -1 })
       .lean();
+
+    console.log(
+      "GET /api/conversations: Fetched conversations for user",
+      userId,
+      conversations
+    );
 
     const transformed = conversations.map((conv) => ({
       ...conv,
@@ -128,6 +142,7 @@ export async function GET() {
 
     return NextResponse.json(transformed);
   } catch (error: any) {
+    console.error("GET /api/conversations error:", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

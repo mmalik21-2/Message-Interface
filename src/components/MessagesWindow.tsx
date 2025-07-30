@@ -232,7 +232,8 @@ export default function ChatPage() {
             </div>
           </div>
 
-          {conversation?.isGroup && (
+          {/* Show DropdownMenu only for non-Channel groups */}
+          {conversation?.isGroup && conversation.groupName !== "Channel" && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon">
@@ -258,16 +259,50 @@ export default function ChatPage() {
         <Card className="flex-1 overflow-y-auto p-4 space-y-4 border-none">
           {messages.map((msg, index) => {
             const isSender = msg.senderId._id === session?.user?.id;
+            const sender = conversation?.participants.find(
+              (p) => p._id === msg.senderId._id
+            );
+
+            // Log for debugging
+            console.log(`Sender for message ${msg._id}:`, sender);
+
+            const renderProfileImage = () => {
+              if (sender?.profilePic) {
+                return (
+                  <div className="h-10 w-10 rounded-full overflow-hidden border border-white shadow-sm">
+                    <Image
+                      src={sender.profilePic}
+                      alt={`${sender.firstName || "Unknown"} ${sender.lastName || ""}`}
+                      width={40}
+                      height={40}
+                      className="w-full h-full object-cover"
+                      onError={() =>
+                        console.error(`Failed to load image for ${sender._id}`)
+                      }
+                    />
+                  </div>
+                );
+              }
+              const initials = `${sender?.firstName?.[0] || "U"}${sender?.lastName?.[0] || ""}`;
+              return (
+                <div className="h-10 w-10 rounded-full bg-gray-600 text-white flex items-center justify-center text-sm font-medium">
+                  {initials}
+                </div>
+              );
+            };
 
             return (
               <div
                 key={msg._id}
                 ref={index === messages.length - 1 ? lastMessageRef : null}
-                className={clsx("flex", {
+                className={clsx("flex items-start gap-3", {
                   "justify-end": isSender,
                   "justify-start": !isSender,
                 })}
               >
+                {/* Profile Picture for Non-Sender (left) */}
+                {!isSender && renderProfileImage()}
+
                 <div
                   className={clsx("flex flex-col max-w-xs", {
                     "items-end": isSender,
@@ -275,8 +310,7 @@ export default function ChatPage() {
                   })}
                 >
                   <span className="text-xs text-gray-400 mb-1">
-                    {msg.senderId?.firstName || "Unknown"}{" "}
-                    {msg.senderId?.lastName || ""}
+                    {sender?.firstName || "Unknown"} {sender?.lastName || ""}
                   </span>
 
                   {msg.imageUrl && (
@@ -337,6 +371,9 @@ export default function ChatPage() {
                     </div>
                   )}
                 </div>
+
+                {/* Profile Picture for Sender (right) */}
+                {isSender && renderProfileImage()}
               </div>
             );
           })}

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -16,6 +17,12 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import Image from "next/image";
 
 interface User {
@@ -41,6 +48,7 @@ interface FormData {
 }
 
 export default function SideBar() {
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const { data: session, status } = useSession();
   const userId = session?.user?.id;
   const firstName = session?.user?.firstName || "";
@@ -52,7 +60,6 @@ export default function SideBar() {
   const [groupName, setGroupName] = useState("");
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [creatingGroup, setCreatingGroup] = useState(false);
-
   const [formData, setFormData] = useState<FormData>({
     phoneNumber: "",
     firstName: "",
@@ -61,7 +68,6 @@ export default function SideBar() {
   });
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [imageBlob, setImageBlob] = useState<Blob | null>(null);
 
   const router = useRouter();
   const params = useParams();
@@ -69,20 +75,32 @@ export default function SideBar() {
 
   useEffect(() => {
     const fetchUsers = async () => {
-      const res = await fetch("/api/users");
-      const data = await res.json();
-      setUsers(data.filter((user: User) => user._id !== userId));
+      try {
+        const res = await fetch("/api/users");
+        if (!res.ok) throw new Error(`Failed to fetch users: ${res.status}`);
+        const data = await res.json();
+        setUsers(data.filter((user: User) => user._id !== userId));
+      } catch (err: any) {
+        setError(`Failed to load users: ${err.message}`);
+      }
     };
 
     const fetchConversations = async () => {
-      const res = await fetch("/api/conversations");
-      const data = await res.json();
-      const sorted = data.sort((a: Conversation, b: Conversation) => {
-        const aTime = new Date(a.lastMessage?.createdAt || 0).getTime();
-        const bTime = new Date(b.lastMessage?.createdAt || 0).getTime();
-        return bTime - aTime;
-      });
-      setConversations(sorted);
+      try {
+        const res = await fetch("/api/conversations");
+        if (!res.ok) throw new Error(`Failed to fetch conversations`);
+        const data = await res.json();
+        const sorted = data.sort((a: Conversation, b: Conversation) => {
+          if (a.groupName === "Channel") return -1;
+          if (b.groupName === "Channel") return 1;
+          const aTime = new Date(a.lastMessage?.createdAt || 0).getTime();
+          const bTime = new Date(b.lastMessage?.createdAt || 0).getTime();
+          return bTime - aTime;
+        });
+        setConversations(sorted);
+      } catch (err: any) {
+        setError(`Failed to load conversations: ${err.message}`);
+      }
     };
 
     let interval: NodeJS.Timeout;
@@ -104,54 +122,66 @@ export default function SideBar() {
     if (existingConv)
       return router.push(`/dashboard/messages/${existingConv._id}`);
 
-    const res = await fetch("/api/conversations", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ recipientId }),
-    });
-
-    const conversation = await res.json();
-    setConversations((prev) => [conversation, ...prev]);
-    router.push(`/dashboard/messages/${conversation._id}`);
+    try {
+      const res = await fetch("/api/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recipientId }),
+      });
+      const conversation = await res.json();
+      setConversations((prev) => [conversation, ...prev]);
+      router.push(`/dashboard/messages/${conversation._id}`);
+    } catch (err: any) {
+      setError(`Failed to start conversation: ${err.message}`);
+    }
   };
 
   const createGroupConversation = async () => {
     if (selectedUsers.length < 2) return alert("Select at least 2 users");
-
     setCreatingGroup(true);
+
     const selectedNames = users
       .filter((u) => selectedUsers.includes(u._id))
       .map((u) => `${u.firstName || "Unknown"} ${u.lastName || ""}`)
       .slice(0, 3)
       .join(", ");
-
     const finalGroupName =
       groupName.trim() ||
       `${selectedNames}${selectedUsers.length > 3 ? "..." : ""}`;
 
-    const res = await fetch("/api/conversations", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        participantIds: selectedUsers,
-        isGroup: true,
-        groupName: finalGroupName,
-      }),
-    });
+    if (finalGroupName === "Channel") {
+      alert("Cannot create group named 'Channel'");
+      setCreatingGroup(false);
+      return;
+    }
 
-    const newConversation = await res.json();
-    setConversations((prev) => [newConversation, ...prev]);
-    setSelectedUsers([]);
-    setGroupName("");
-    setIsGroupModalOpen(false);
-    setCreatingGroup(false);
-    router.push(`/dashboard/messages/${newConversation._id}`);
+    try {
+      const res = await fetch("/api/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          participantIds: selectedUsers,
+          isGroup: true,
+          groupName: finalGroupName,
+        }),
+      });
+      const newConversation = await res.json();
+      setConversations((prev) => [newConversation, ...prev]);
+      setSelectedUsers([]);
+      setGroupName("");
+      setIsGroupModalOpen(false);
+      router.push(`/dashboard/messages/${newConversation._id}`);
+    } catch (err: any) {
+      setError(`Failed to create group: ${err.message}`);
+    } finally {
+      setCreatingGroup(false);
+    }
   };
 
   const renderProfileImage = (user: User) => {
     if (user.profilePic) {
       return (
-        <div className="h-10 w-10 rounded-full overflow-hidden border border-white shadow-sm">
+        <div className="h-8 w-8 rounded-full overflow-hidden border border-white shadow-sm">
           <Image
             src={user.profilePic}
             alt="Profile"
@@ -174,13 +204,7 @@ export default function SideBar() {
     if (status === "authenticated" && session?.user?.id) {
       fetch(`/api/user/${session.user.id}`)
         .then(async (res) => {
-          if (!res.ok) {
-            throw new Error(
-              `API error: ${res.status} - ${
-                res.status === 404 ? "User not found" : await res.text()
-              }`
-            );
-          }
+          if (!res.ok) throw new Error("User fetch failed");
           return res.json();
         })
         .then((data) => {
@@ -194,14 +218,12 @@ export default function SideBar() {
         })
         .catch((err) => setError(`Failed to load profile: ${err.message}`));
     } else if (status === "unauthenticated") {
-      setError("Please sign in to view your profile");
       router.push("/api/auth/signin");
     }
   }, [session, status, router]);
 
   return (
     <>
-      {/* Group Modal */}
       <Dialog open={isGroupModalOpen} onOpenChange={setIsGroupModalOpen}>
         <DialogContent className="w-full sm:max-w-2xl max-h-screen overflow-y-auto">
           <DialogHeader>
@@ -253,7 +275,6 @@ export default function SideBar() {
         </DialogContent>
       </Dialog>
 
-      {/* Sidebar */}
       <aside className="w-64 h-screen border-r overflow-y-auto">
         <div className="px-4 py-4 border-b">
           <div className="flex items-center justify-between gap-2">
@@ -275,13 +296,27 @@ export default function SideBar() {
               )}
             </Link>
             <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsGroupModalOpen(true)}
-              >
-                <Plus className="w-5 h-5" />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <Plus className="w-5 h-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-48">
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setIsUserDropdownOpen(true);
+                    }}
+                  >
+                    Start New Chat
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem onSelect={() => setIsGroupModalOpen(true)}>
+                    Create Group
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               <div className="w-9 h-9">
                 <ModeToggle />
               </div>
@@ -297,71 +332,106 @@ export default function SideBar() {
           </div>
         </div>
 
+        {/* Start New Chat Dropdown */}
+        {isUserDropdownOpen && (
+          <div className="px-4 py-2 border-b space-y-2">
+            {users
+              .filter((user) => {
+                return !conversations.some(
+                  (conv) =>
+                    !conv.isGroup &&
+                    conv.participants.some((p) => p._id === user._id) &&
+                    conv.participants.some((p) => p._id === userId)
+                );
+              })
+              .map((user) => (
+                <div
+                  key={user._id}
+                  onClick={() => {
+                    startConversation(user._id);
+                    setIsUserDropdownOpen(false);
+                  }}
+                  className="cursor-pointer hover:bg-gradient-to-r from-cyan-400 to-green-300 p-2 rounded flex items-center gap-2"
+                >
+                  {renderProfileImage(user)}
+                  <span>
+                    {user.firstName || "Unknown"} {user.lastName || ""}
+                  </span>
+                </div>
+              ))}
+            <div className="pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => setIsUserDropdownOpen(false)}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        )}
+
         <div className="px-4 py-4">
+          {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
           <ul className="space-y-4">
-            <li>
-              <h3 className="text-lg font-medium mb-2">Users</h3>
-              <ul className="space-y-1">
-                {users.map((user) => (
-                  <li
-                    key={user._id}
-                    onClick={() => startConversation(user._id)}
-                    className="cursor-pointer hover:bg-gradient-to-r from-cyan-400 to-green-300 p-2 rounded flex items-center gap-2"
-                  >
-                    {renderProfileImage(user)}
-                    <span>
-                      {user.firstName || "Unknown"} {user.lastName || ""}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </li>
             <li>
               <h3 className="text-lg font-medium mb-2">Conversations</h3>
               <ul className="space-y-1">
-                {conversations.map((conv) => {
-                  const displayName = conv.isGroup
-                    ? conv.groupName || "Group Chat"
-                    : conv.participants
-                        .filter((p) => p._id !== userId)
-                        .map(
-                          (p) =>
-                            `${p.firstName || "Unknown"} ${p.lastName || ""}`
-                        )
-                        .join(", ");
+                {conversations.length > 0 ? (
+                  conversations.map((conv) => {
+                    const displayName = conv.isGroup
+                      ? conv.groupName || "Group Chat"
+                      : conv.participants
+                          .filter((p) => p._id !== userId)
+                          .map(
+                            (p) =>
+                              `${p.firstName || "Unknown"} ${p.lastName || ""}`
+                          )
+                          .join(", ");
+                    const displayPic =
+                      !conv.isGroup &&
+                      conv.participants.find((p) => p._id !== userId);
 
-                  const displayPic =
-                    !conv.isGroup &&
-                    conv.participants.find((p) => p._id !== userId);
-
-                  return (
-                    <li key={conv._id}>
-                      <Link
-                        href={`/dashboard/messages/${conv._id}`}
-                        className={clsx(
-                          "cursor-pointer hover:bg-gradient-to-r from-cyan-400 to-green-300 p-2 rounded block",
-                          activeId === conv._id &&
-                            "bg-gradient-to-r from-cyan-400 to-green-300"
-                        )}
-                      >
-                        <div className="flex items-center gap-2">
-                          {displayPic && renderProfileImage(displayPic)}
-                          <div>
-                            <span className="font-medium">{displayName}</span>
-                            {conv.isGroup && (
-                              <span className="ml-2 text-xs bg-gray-700 text-white px-2 py-1 rounded">
-                                Group
-                              </span>
-                            )}
-                            <p className="text-sm text-gray-400 truncate">
-                              {conv.lastMessage?.text || "No messages yet"}
-                            </p>
+                    return (
+                      <li key={conv._id}>
+                        <Link
+                          href={`/dashboard/messages/${conv._id}`}
+                          className={clsx(
+                            "cursor-pointer hover:bg-gradient-to-r from-cyan-400 to-green-300 p-2 rounded block",
+                            activeId === conv._id &&
+                              "bg-gradient-to-r from-cyan-400 to-green-300"
+                          )}
+                        >
+                          <div className="flex items-center gap-2">
+                            {displayPic && renderProfileImage(displayPic)}
+                            <div>
+                              <span className="font-medium">{displayName}</span>
+                              {conv.groupName === "Channel" ? (
+                                <span className="ml-2 text-xs bg-blue-500 text-white px-2 py-1 rounded">
+                                  Channel
+                                </span>
+                              ) : (
+                                conv.isGroup && (
+                                  <span className="ml-2 text-xs bg-gray-700 text-white px-2 py-1 rounded">
+                                    Group
+                                  </span>
+                                )
+                              )}
+                              <p className="text-sm text-gray-400 truncate">
+                                {conv.lastMessage?.text || "No messages yet"}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      </Link>
-                    </li>
-                  );
-                })}
+                        </Link>
+                      </li>
+                    );
+                  })
+                ) : (
+                  <p className="text-sm text-gray-400">
+                    No conversations available
+                  </p>
+                )}
               </ul>
             </li>
           </ul>
