@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import socket from "@/lib/socket";
 
 interface Message {
   _id: string;
@@ -38,6 +39,7 @@ interface Message {
     lastName?: string;
   };
   createdAt: string;
+  readBy?: string[];
 }
 
 interface Conversation {
@@ -64,10 +66,8 @@ export default function ChatPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
-
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [zoomed, setZoomed] = useState(false);
-
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
@@ -107,6 +107,23 @@ export default function ChatPage() {
     fetchConversation();
     fetchMessages();
     const interval = setInterval(fetchMessages, 5000);
+
+    // Mark messages as read when viewing the conversation
+    const markMessagesRead = async () => {
+      try {
+        await fetch(`/api/messages/mark-read`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ conversationId: id }),
+        });
+        socket.emit("markMessagesRead", id);
+      } catch (err) {
+        console.error("Failed to mark messages as read:", err);
+      }
+    };
+
+    markMessagesRead();
+
     return () => clearInterval(interval);
   }, [id]);
 
@@ -121,11 +138,10 @@ export default function ChatPage() {
         body: JSON.stringify({ conversationId: id, text }),
       });
       if (!res.ok) throw new Error("Failed to send message");
+      const newMessage = await res.json();
       setText("");
-      const updatedMessages = await fetch(`/api/messages/${id}`).then((res) =>
-        res.json()
-      );
-      setMessages(updatedMessages);
+      setMessages((prev) => [...prev, newMessage]);
+      socket.emit("sendMessage", { conversationId: id, ...newMessage });
     } catch (err) {
       console.error("Send message error:", err);
     } finally {
@@ -164,6 +180,7 @@ export default function ChatPage() {
       }
 
       setMessages((prev) => [...prev, data]);
+      socket.emit("sendMessage", { conversationId: id, ...data });
     } catch (error: any) {
       console.error("Upload error:", error.message);
       alert(`Upload error: ${error.message || "Unknown error"}`);
@@ -181,10 +198,8 @@ export default function ChatPage() {
   return (
     <div className="flex h-screen">
       <div className="flex-1 flex flex-col h-full p-4">
-        {/* Header */}
         <div className="mb-4 flex justify-between items-start">
           <div className="flex items-center gap-3">
-            {/* Profile Picture or Group Icon */}
             {conversation?.isGroup ? (
               <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-white text-sm font-medium">
                 {conversation.groupName?.[0]?.toUpperCase() || "G"}
@@ -231,8 +246,6 @@ export default function ChatPage() {
               )}
             </div>
           </div>
-
-          {/* Show DropdownMenu only for non-Channel groups */}
           {conversation?.isGroup && conversation.groupName !== "Channel" && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -254,17 +267,12 @@ export default function ChatPage() {
             </DropdownMenu>
           )}
         </div>
-
-        {/* Messages */}
         <Card className="flex-1 overflow-y-auto p-4 space-y-4 border-none">
           {messages.map((msg, index) => {
             const isSender = msg.senderId._id === session?.user?.id;
             const sender = conversation?.participants.find(
               (p) => p._id === msg.senderId._id
             );
-
-            // Log for debugging
-            console.log(`Sender for message ${msg._id}:`, sender);
 
             const renderProfileImage = () => {
               if (sender?.profilePic) {
@@ -276,9 +284,6 @@ export default function ChatPage() {
                       width={40}
                       height={40}
                       className="w-full h-full object-cover"
-                      onError={() =>
-                        console.error(`Failed to load image for ${sender._id}`)
-                      }
                     />
                   </div>
                 );
@@ -300,9 +305,7 @@ export default function ChatPage() {
                   "justify-start": !isSender,
                 })}
               >
-                {/* Profile Picture for Non-Sender (left) */}
                 {!isSender && renderProfileImage()}
-
                 <div
                   className={clsx("flex flex-col max-w-xs", {
                     "items-end": isSender,
@@ -312,7 +315,6 @@ export default function ChatPage() {
                   <span className="text-xs text-gray-400 mb-1">
                     {sender?.firstName || "Unknown"} {sender?.lastName || ""}
                   </span>
-
                   {msg.imageUrl && (
                     <div className="flex flex-col">
                       <Image
@@ -331,7 +333,6 @@ export default function ChatPage() {
                       </div>
                     </div>
                   )}
-
                   {msg.videoUrl && (
                     <video
                       controls
@@ -340,7 +341,6 @@ export default function ChatPage() {
                       <source src={msg.videoUrl} type="video/mp4" />
                     </video>
                   )}
-
                   {msg.fileUrl && (
                     <a
                       href={msg.fileUrl}
@@ -351,7 +351,6 @@ export default function ChatPage() {
                       View File
                     </a>
                   )}
-
                   {!msg.imageUrl && !msg.videoUrl && !msg.fileUrl && (
                     <div
                       className={clsx(
@@ -371,16 +370,12 @@ export default function ChatPage() {
                     </div>
                   )}
                 </div>
-
-                {/* Profile Picture for Sender (right) */}
                 {isSender && renderProfileImage()}
               </div>
             );
           })}
           <div ref={bottomRef} />
         </Card>
-
-        {/* Selected Image Modal */}
         {selectedImage && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80">
             <div className="relative max-w-[90vw] max-h-[90vh] overflow-hidden">
@@ -415,8 +410,6 @@ export default function ChatPage() {
             </div>
           </div>
         )}
-
-        {/* Input Section */}
         <div className="mt-4 flex items-center gap-2">
           <Textarea
             className="flex-1 h-10 resize-none overflow-hidden border border-gray-700"
@@ -431,7 +424,6 @@ export default function ChatPage() {
             }}
             disabled={loading || uploading}
           />
-
           <Button
             variant="outline"
             className="border border-gray-600 hover:bg-gray-800"
@@ -444,7 +436,6 @@ export default function ChatPage() {
               <Paperclip className="w-4 h-4" />
             )}
           </Button>
-
           <input
             type="file"
             ref={fileInputRef}
@@ -452,7 +443,6 @@ export default function ChatPage() {
             className="hidden"
             accept="image/*,video/*,application/pdf,.doc,.docx,.xls,.xlsx,.zip"
           />
-
           <Button
             className="bg-gradient-to-r from-cyan-400 to-green-300 text-black hover:opacity-90"
             onClick={sendMessage}
@@ -464,7 +454,6 @@ export default function ChatPage() {
               <SendHorizonal className="w-4 h-4" />
             )}
           </Button>
-
           <Button
             variant="outline"
             className="border border-gray-600 hover:bg-gray-800"
@@ -473,8 +462,6 @@ export default function ChatPage() {
             <ArrowDown className="w-4 h-4" />
           </Button>
         </div>
-
-        {/* Edit Group Dialog */}
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
           <DialogContent>
             <DialogHeader>
@@ -498,7 +485,6 @@ export default function ChatPage() {
                   const previousName = conversation.groupName;
 
                   try {
-                    // 1. Update group name
                     const res = await fetch(
                       `/api/conversations/${conversation._id}`,
                       {
@@ -514,8 +500,6 @@ export default function ChatPage() {
                     }
 
                     const updated = await res.json();
-
-                    // 2. Send a regular message to the group
                     await fetch("/api/messages", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
@@ -525,16 +509,17 @@ export default function ChatPage() {
                       }),
                     });
 
-                    // 3. Refresh state
                     const updatedMessages = await fetch(
                       `/api/messages/${conversation._id}`
                     ).then((res) => res.json());
                     setMessages(updatedMessages);
-
                     setConversation((prev) =>
                       prev ? { ...prev, groupName: updated.groupName } : prev
                     );
-
+                    socket.emit("sendMessage", {
+                      conversationId: conversation._id,
+                      text: ` changed the group name from "${previousName}" to "${newGroupName}"`,
+                    });
                     setEditDialogOpen(false);
                   } catch (err: any) {
                     console.error(err);
@@ -547,8 +532,6 @@ export default function ChatPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
-        {/* Delete Group Dialog */}
         <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <DialogContent>
             <DialogHeader>

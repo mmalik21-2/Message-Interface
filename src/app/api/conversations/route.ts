@@ -5,8 +5,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
 import Conversation from "@/models/Conversation";
-import Message from "@/models/Message"; // Ensure Message model is imported
+import Message from "@/models/Message";
 import mongoose from "mongoose";
+import socket from "@/lib/socket";
 
 export async function POST(req: Request) {
   try {
@@ -49,6 +50,9 @@ export async function POST(req: Request) {
         .populate("participants", "firstName lastName profilePic")
         .lean();
 
+      // Emit new conversation event
+      socket.emit("newConversation", populated);
+
       return NextResponse.json(populated);
     }
 
@@ -86,6 +90,9 @@ export async function POST(req: Request) {
       .populate("participants", "firstName lastName profilePic")
       .lean();
 
+    // Emit new conversation event
+    socket.emit("newConversation", populated);
+
     return NextResponse.json(populated);
   } catch (error: any) {
     console.error("POST /api/conversations error:", error.message);
@@ -108,9 +115,6 @@ export async function GET() {
     const userId = session.user.id;
     const userObjectId = new mongoose.Types.ObjectId(userId);
 
-    // Log registered models for debugging
-    console.log("Registered models:", mongoose.modelNames());
-
     const conversations = await Conversation.find({
       participants: userObjectId,
     })
@@ -118,28 +122,40 @@ export async function GET() {
       .populate({
         path: "lastMessage",
         select: "text imageUrl videoUrl fileUrl createdAt",
-        model: Message, // Explicitly reference Message model
+        model: Message,
       })
       .sort({ updatedAt: -1 })
       .lean();
 
-    const transformed = conversations.map((conv) => ({
-      ...conv,
-      lastMessage: conv.lastMessage
-        ? {
-            text:
-              conv.lastMessage.text ||
-              (conv.lastMessage.imageUrl
-                ? "Image"
-                : conv.lastMessage.videoUrl
-                  ? "Video"
-                  : conv.lastMessage.fileUrl
-                    ? "File"
-                    : "No content"),
-            createdAt: conv.lastMessage.createdAt,
-          }
-        : null,
-    }));
+    // Calculate unread message count for each conversation
+    const transformed = await Promise.all(
+      conversations.map(async (conv) => {
+        const unreadCount = await Message.countDocuments({
+          conversationId: conv._id,
+          senderId: { $ne: userObjectId },
+          readBy: { $nin: [userObjectId] },
+        });
+
+        return {
+          ...conv,
+          unreadCount,
+          lastMessage: conv.lastMessage
+            ? {
+                text:
+                  conv.lastMessage.text ||
+                  (conv.lastMessage.imageUrl
+                    ? "Image"
+                    : conv.lastMessage.videoUrl
+                      ? "Video"
+                      : conv.lastMessage.fileUrl
+                        ? "File"
+                        : "No content"),
+                createdAt: conv.lastMessage.createdAt,
+              }
+            : null,
+        };
+      })
+    );
 
     return NextResponse.json(transformed);
   } catch (error: any) {

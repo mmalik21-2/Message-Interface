@@ -8,6 +8,7 @@ export interface IMessage extends Document {
   imageUrl?: string;
   videoUrl?: string;
   fileUrl?: string;
+  readBy: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -28,6 +29,7 @@ const MessageSchema = new Schema<IMessage>(
     imageUrl: { type: String },
     videoUrl: { type: String },
     fileUrl: { type: String },
+    readBy: [{ type: Schema.Types.ObjectId, ref: "User" }],
   },
   { timestamps: true }
 );

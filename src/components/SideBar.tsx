@@ -24,6 +24,7 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import Image from "next/image";
+import socket from "@/lib/socket";
 
 interface User {
   _id: string;
@@ -38,6 +39,7 @@ interface Conversation {
   isGroup: boolean;
   groupName?: string;
   lastMessage?: { text: string; createdAt: Date };
+  unreadCount?: number;
 }
 
 interface FormData {
@@ -53,7 +55,6 @@ export default function SideBar() {
   const userId = session?.user?.id;
   const firstName = session?.user?.firstName || "";
   const lastName = session?.user?.lastName || "";
-
   const [users, setUsers] = useState<User[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
@@ -103,14 +104,50 @@ export default function SideBar() {
       }
     };
 
-    let interval: NodeJS.Timeout;
     if (status === "authenticated" && userId) {
       fetchUsers();
       fetchConversations();
-      interval = setInterval(fetchConversations, 5000);
+      const interval = setInterval(fetchConversations, 5000);
+      return () => clearInterval(interval);
     }
-    return () => clearInterval(interval);
   }, [status, userId]);
+
+  useEffect(() => {
+    socket.on("newMessage", (message: any) => {
+      if (message.conversationId !== activeId) {
+        setConversations((prev) =>
+          prev.map((conv) =>
+            conv._id === message.conversationId
+              ? { ...conv, unreadCount: (conv.unreadCount || 0) + 1 }
+              : conv
+          )
+        );
+      }
+    });
+
+    socket.on("messagesRead", (conversationId: string) => {
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv._id === conversationId ? { ...conv, unreadCount: 0 } : conv
+        )
+      );
+    });
+
+    socket.on("newConversation", (conversation: Conversation) => {
+      if (conversation.participants.some((p) => p._id === userId)) {
+        setConversations((prev) => [
+          { ...conversation, unreadCount: 0 },
+          ...prev,
+        ]);
+      }
+    });
+
+    return () => {
+      socket.off("newMessage");
+      socket.off("messagesRead");
+      socket.off("newConversation");
+    };
+  }, [activeId, userId]);
 
   const startConversation = async (recipientId: string) => {
     const existingConv = conversations.find(
@@ -129,7 +166,10 @@ export default function SideBar() {
         body: JSON.stringify({ recipientId }),
       });
       const conversation = await res.json();
-      setConversations((prev) => [conversation, ...prev]);
+      setConversations((prev) => [
+        { ...conversation, unreadCount: 0 },
+        ...prev,
+      ]);
       router.push(`/dashboard/messages/${conversation._id}`);
     } catch (err: any) {
       setError(`Failed to start conversation: ${err.message}`);
@@ -166,7 +206,10 @@ export default function SideBar() {
         }),
       });
       const newConversation = await res.json();
-      setConversations((prev) => [newConversation, ...prev]);
+      setConversations((prev) => [
+        { ...newConversation, unreadCount: 0 },
+        ...prev,
+      ]);
       setSelectedUsers([]);
       setGroupName("");
       setIsGroupModalOpen(false);
@@ -303,20 +346,14 @@ export default function SideBar() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-48">
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setIsUserDropdownOpen(true);
-                    }}
-                  >
+                  <DropdownMenuItem onClick={() => setIsUserDropdownOpen(true)}>
                     Start New Chat
                   </DropdownMenuItem>
-
                   <DropdownMenuItem onSelect={() => setIsGroupModalOpen(true)}>
                     Create Group
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-
               <div className="w-9 h-9">
                 <ModeToggle />
               </div>
@@ -332,18 +369,18 @@ export default function SideBar() {
           </div>
         </div>
 
-        {/* Start New Chat Dropdown */}
         {isUserDropdownOpen && (
           <div className="px-4 py-2 border-b space-y-2">
             {users
-              .filter((user) => {
-                return !conversations.some(
-                  (conv) =>
-                    !conv.isGroup &&
-                    conv.participants.some((p) => p._id === user._id) &&
-                    conv.participants.some((p) => p._id === userId)
-                );
-              })
+              .filter(
+                (user) =>
+                  !conversations.some(
+                    (conv) =>
+                      !conv.isGroup &&
+                      conv.participants.some((p) => p._id === user._id) &&
+                      conv.participants.some((p) => p._id === userId)
+                  )
+              )
               .map((user) => (
                 <div
                   key={user._id}
@@ -405,8 +442,17 @@ export default function SideBar() {
                         >
                           <div className="flex items-center gap-2">
                             {displayPic && renderProfileImage(displayPic)}
-                            <div>
-                              <span className="font-medium">{displayName}</span>
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium">
+                                  {displayName}
+                                </span>
+                                {conv.unreadCount ? (
+                                  <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1">
+                                    {conv.unreadCount}
+                                  </span>
+                                ) : null}
+                              </div>
                               {conv.groupName === "Channel" ? (
                                 <span className="ml-2 text-xs bg-blue-500 text-white px-2 py-1 rounded">
                                   Channel
