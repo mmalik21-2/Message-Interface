@@ -201,7 +201,7 @@ export default function ChatPage() {
         <div className="mb-4 flex justify-between items-start">
           <div className="flex items-center gap-3">
             {conversation?.isGroup ? (
-              <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-white text-sm font-medium">
+              <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-white text-sm font-medium lg:ml-0 ml-10">
                 {conversation.groupName?.[0]?.toUpperCase() || "G"}
               </div>
             ) : (
@@ -354,7 +354,7 @@ export default function ChatPage() {
                   {!msg.imageUrl && !msg.videoUrl && !msg.fileUrl && (
                     <div
                       className={clsx(
-                        "text-sm px-4 py-2 rounded-lg",
+                        "text-sm px-4 py-2 rounded-lg max-w-[150px] lg:max-w-[850px] overflow-y-auto whitespace-pre-wrap break-words",
                         isSender
                           ? "bg-gradient-to-r from-cyan-400 to-green-300 text-black"
                           : "bg-gray-700 text-white"
@@ -412,7 +412,7 @@ export default function ChatPage() {
         )}
         <div className="mt-4 flex items-center gap-2">
           <Textarea
-            className="flex-1 h-10 resize-none overflow-hidden border border-gray-700"
+            className="w-full resize-y min-h-[40px] overflow-y-auto whitespace-pre-wrap break-words border border-gray-700 box-border min-w-[150px] max-w-[150px] lg:min-w-[850] lg:max-w-[850] ml-10 lg:ml-0"
             placeholder="Type your message..."
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -424,6 +424,7 @@ export default function ChatPage() {
             }}
             disabled={loading || uploading}
           />
+
           <Button
             variant="outline"
             className="border border-gray-600 hover:bg-gray-800"

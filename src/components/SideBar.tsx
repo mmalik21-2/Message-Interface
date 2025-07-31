@@ -318,7 +318,7 @@ export default function SideBar() {
         </DialogContent>
       </Dialog>
 
-      <aside className="w-64 h-screen border-r overflow-y-auto">
+      <aside className="w-16 md:w-64 h-screen border-r overflow-y-auto">
         <div className="px-4 py-4 border-b">
           <div className="flex items-center justify-between gap-2">
             <Link href={`/dashboard/profile/${userId}`}>
@@ -338,7 +338,7 @@ export default function SideBar() {
                 </div>
               )}
             </Link>
-            <div className="flex items-center gap-1">
+            <div className="hidden md:flex items-center gap-1">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon">
@@ -367,6 +367,25 @@ export default function SideBar() {
               </Button>
             </div>
           </div>
+        </div>
+        {/* Mobile Footer Buttons */}
+        <div className="flex flex-col md:flex-row md:hidden justify-around p-2 border-t">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsUserDropdownOpen(true)}
+          >
+            <Plus className="w-5 h-5" />
+          </Button>
+          <ModeToggle />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => signOut({ callbackUrl: "/" })}
+            title="Logout"
+          >
+            <LogOut className="w-5 h-5" />
+          </Button>
         </div>
 
         {isUserDropdownOpen && (
@@ -413,66 +432,102 @@ export default function SideBar() {
           {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
           <ul className="space-y-4">
             <li>
-              <h3 className="text-lg font-medium mb-2">Conversations</h3>
               <ul className="space-y-1">
                 {conversations.length > 0 ? (
-                  conversations.map((conv) => {
-                    const displayName = conv.isGroup
-                      ? conv.groupName || "Group Chat"
-                      : conv.participants
-                          .filter((p) => p._id !== userId)
-                          .map(
-                            (p) =>
-                              `${p.firstName || "Unknown"} ${p.lastName || ""}`
-                          )
-                          .join(", ");
-                    const displayPic =
-                      !conv.isGroup &&
-                      conv.participants.find((p) => p._id !== userId);
+                  <>
+                    {/* Mobile View */}
+                    <div className="flex flex-wrap gap-2 md:hidden ">
+                      {conversations.map((conv) => {
+                        const displayPic =
+                          !conv.isGroup &&
+                          conv.participants.find((p) => p._id !== userId);
 
-                    return (
-                      <li key={conv._id}>
-                        <Link
-                          href={`/dashboard/messages/${conv._id}`}
-                          className={clsx(
-                            "cursor-pointer hover:bg-gradient-to-r from-cyan-400 to-green-300 p-2 rounded block",
-                            activeId === conv._id &&
-                              "bg-gradient-to-r from-cyan-400 to-green-300"
-                          )}
-                        >
-                          <div className="flex items-center gap-2">
-                            {displayPic && renderProfileImage(displayPic)}
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between">
-                                <span className="font-medium">
-                                  {displayName}
-                                </span>
-                                {conv.unreadCount ? (
-                                  <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1">
-                                    {conv.unreadCount}
-                                  </span>
-                                ) : null}
-                              </div>
-                              {conv.groupName === "Channel" ? (
-                                <span className="ml-2 text-xs bg-blue-500 text-white px-2 py-1 rounded">
-                                  Channel
-                                </span>
-                              ) : (
-                                conv.isGroup && (
-                                  <span className="ml-2 text-xs bg-gray-700 text-white px-2 py-1 rounded">
-                                    Group
-                                  </span>
-                                )
+                        return (
+                          <Link
+                            key={conv._id}
+                            href={`/dashboard/messages/${conv._id}`}
+                            className={clsx(
+                              "p-1 rounded-full border-2",
+                              activeId === conv._id
+                                ? "border-green-400"
+                                : "border-transparent"
+                            )}
+                          >
+                            {displayPic ? (
+                              renderProfileImage(displayPic)
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-gray-600" />
+                            )}
+                          </Link>
+                        );
+                      })}
+                    </div>
+
+                    {/* Desktop View */}
+                    <div className="hidden md:block">
+                      {conversations.map((conv) => {
+                        const displayName = conv.isGroup
+                          ? conv.groupName || "Group Chat"
+                          : conv.participants
+                              .filter((p) => p._id !== userId)
+                              .map(
+                                (p) =>
+                                  `${p.firstName || "Unknown"} ${p.lastName || ""}`
+                              )
+                              .join(", ");
+                        const displayPic =
+                          !conv.isGroup &&
+                          conv.participants.find((p) => p._id !== userId);
+
+                        return (
+                          <li key={conv._id}>
+                            <Link
+                              href={`/dashboard/messages/${conv._id}`}
+                              className={clsx(
+                                "cursor-pointer hover:bg-gradient-to-r from-cyan-400 to-green-300 p-2 rounded block",
+                                activeId === conv._id &&
+                                  "bg-gradient-to-r from-cyan-400 to-green-300"
                               )}
-                              <p className="text-sm text-gray-400 truncate">
-                                {conv.lastMessage?.text || "No messages yet"}
-                              </p>
-                            </div>
-                          </div>
-                        </Link>
-                      </li>
-                    );
-                  })
+                            >
+                              <div className="flex items-center gap-2">
+                                {displayPic && renderProfileImage(displayPic)}
+                                <div className="flex-1">
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-medium">
+                                      {displayName}
+                                    </span>
+                                    {conv.unreadCount ? (
+                                      <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1">
+                                        {conv.unreadCount}
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                  {conv.groupName === "Channel" ? (
+                                    <span className="ml-2 text-xs bg-blue-500 text-white px-2 py-1 rounded">
+                                      Channel
+                                    </span>
+                                  ) : (
+                                    conv.isGroup && (
+                                      <span className="ml-2 text-xs bg-gray-700 text-white px-2 py-1 rounded">
+                                        Group
+                                      </span>
+                                    )
+                                  )}
+                                  <p className="text-sm text-gray-400 truncate max-w-[150px]">
+                                    {conv.lastMessage?.text
+                                      ? conv.lastMessage.text.length > 20
+                                        ? `${conv.lastMessage.text.slice(0, 20)}...`
+                                        : conv.lastMessage.text
+                                      : "No messages yet"}
+                                  </p>
+                                </div>
+                              </div>
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </div>
+                  </>
                 ) : (
                   <p className="text-sm text-gray-400">
                     No conversations available
