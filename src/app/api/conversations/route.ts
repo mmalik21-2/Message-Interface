@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
 import Conversation from "@/models/Conversation";
+import Message from "@/models/Message"; // Ensure Message model is imported
 import mongoose from "mongoose";
 
 export async function POST(req: Request) {
@@ -88,7 +89,10 @@ export async function POST(req: Request) {
     return NextResponse.json(populated);
   } catch (error: any) {
     console.error("POST /api/conversations error:", error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
 
@@ -104,6 +108,9 @@ export async function GET() {
     const userId = session.user.id;
     const userObjectId = new mongoose.Types.ObjectId(userId);
 
+    // Log registered models for debugging
+    console.log("Registered models:", mongoose.modelNames());
+
     const conversations = await Conversation.find({
       participants: userObjectId,
     })
@@ -111,16 +118,10 @@ export async function GET() {
       .populate({
         path: "lastMessage",
         select: "text imageUrl videoUrl fileUrl createdAt",
-        options: { strictPopulate: false },
+        model: Message, // Explicitly reference Message model
       })
       .sort({ updatedAt: -1 })
       .lean();
-
-    console.log(
-      "GET /api/conversations: Fetched conversations for user",
-      userId,
-      conversations
-    );
 
     const transformed = conversations.map((conv) => ({
       ...conv,
@@ -143,6 +144,9 @@ export async function GET() {
     return NextResponse.json(transformed);
   } catch (error: any) {
     console.error("GET /api/conversations error:", error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
